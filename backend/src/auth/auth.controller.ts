@@ -63,8 +63,15 @@ export class AuthController {
   @Post('refresh')
   @Public()
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Rotate the refresh cookie and get a new access token' })
+  @ApiOperation({
+    summary: 'Rotate the refresh cookie and get a new access token',
+    description: 'Returns 204 (no session) when no refresh cookie is present, so page loads stay quiet.',
+  })
   async refresh(@Req() req: Request, @Res({ passthrough: true }) res: Response) {
+    if (!req.cookies?.[REFRESH_COOKIE]) {
+      res.status(HttpStatus.NO_CONTENT);
+      return;
+    }
     try {
       return this.respond(res, await this.auth.refresh(req.cookies?.[REFRESH_COOKIE]));
     } catch (e) {

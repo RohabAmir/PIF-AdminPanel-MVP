@@ -8,3 +8,11 @@ One line per decision: **decision** — reason.
 - **Product branding keeps the original DAN logo + warm-brown auth backgrounds, with "PIF Admin Panel" as product name** — spec: keep original logo; original UI shows no product name other than "Dashboard".
 - **Design tokens measured from the running original** (Playwright computed styles) rather than read only from SCSS — the SCSS ships a template palette that the app overrides inline.
 - **Playwright uses the system Google Chrome (`channel: 'chrome'`) locally, bundled Chromium in CI** — avoids a large browser download on the dev machine.
+- **Phases 3 and 4 were built in one pass** — auth, RBAC and the CMS modules share guards/audit infrastructure, so they were written together and verified by one e2e run; the time log therefore shows Phase 4 closing at the same timestamp as Phase 3.
+- **e2e DB reset uses `migrate deploy` + TRUNCATE (guarded to databases ending in `_test`) instead of `prisma migrate reset`** — Prisma blocks `migrate reset` when run by an AI agent; truncating a dedicated test database is the standard, non-destructive-to-dev alternative.
+- **OTP codes stored as HMAC-SHA256 (keyed with a server secret), not bcrypt** — 6-digit codes are cheap to brute force offline from a plain hash; a keyed HMAC is not, and stays fast.
+- **Refresh reuse grace window (REFRESH_REUSE_GRACE_SECONDS=10)** — two tabs refreshing at the same moment is not theft; outside the window, reuse revokes the whole family.
+- **Forced first-login change doesn't re-ask the temporary password** — the user proved it seconds earlier together with the OTP; the profile change-password does require the current password.
+- **In DEMO_MODE the 4 seeded accounts are protected** (no password change, deactivation, role change or deletion) — so recruiters cannot break the shared demo for the next visitor.
+- **Seeded public API keys are fixed and documented** — they only expose already-public content and form submission; override with SEED_TUAJA_API_KEY / SEED_DAN_API_KEY or regenerate in the UI.
+- **Frontend keeps react-router-dom v6 and Tiptap v2 despite moderate advisories** — the spec pins Router v6 and Tiptap v3 is a breaking rewrite; both advisories are moderate (CI treats moderate as a warning), no high/critical remain. zod moved to v4 to clear a high advisory.

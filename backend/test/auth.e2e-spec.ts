@@ -212,9 +212,12 @@ describe('Auth (e2e)', () => {
       expect(log).not.toBeNull();
     });
 
-    it('refuses refresh without a cookie', async () => {
-      const res = await request(ctx.http).post('/api/auth/refresh');
-      expect(res.status).toBe(401);
+    it('answers 204 (no session) without a cookie and 401 for an unknown cookie', async () => {
+      const none = await request(ctx.http).post('/api/auth/refresh');
+      expect(none.status).toBe(204);
+      expect(none.body).toEqual({});
+      const bogus = await request(ctx.http).post('/api/auth/refresh').set('Cookie', 'pif_rt=not-a-real-token');
+      expect(bogus.status).toBe(401);
     });
   });
 

@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+  body {
+    @apply bg-body font-sans text-base text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply text-accent;
+  }
+  :focus-visible {
+    @apply outline-none ring-2 ring-primary/50 ring-offset-1;
+  }
+  ::selection {
+    @apply bg-primary/20;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-card bg-white shadow-card;
+  }
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(163, 174, 209, 0.35) transparent;
+  }
+  /* Rendered rich text (blog previews, rich-text blocks) */
+  .prose-content {
+    @apply text-[0.875rem] leading-relaxed text-ink;
+  }
+  .prose-content h1 {
+    @apply mb-3 mt-5 text-2xl font-bold;
+  }
+  .prose-content h2 {
+    @apply mb-2 mt-4 text-xl font-bold;
+  }
+  .prose-content h3 {
+    @apply mb-2 mt-3 text-lg font-semibold;
+  }
+  .prose-content p {
+    @apply my-2;
+  }
+  .prose-content ul {
+    @apply my-2 list-disc pl-6;
+  }
+  .prose-content ol {
+    @apply my-2 list-decimal pl-6;
+  }
+  .prose-content blockquote {
+    @apply my-3 border-l-4 border-accent-border bg-accent-soft/60 py-1 pl-4 italic text-accent;
+  }
+  .prose-content a {
+    @apply text-primary underline;
+  }
+  .prose-content code {
+    @apply rounded bg-body px-1 py-0.5 font-mono text-[0.8em];
+  }
+  .prose-content pre {
+    @apply my-3 overflow-x-auto rounded-lg bg-sidebar p-3 text-[0.8rem] text-white;
+  }
+  .prose-content pre code {
+    @apply bg-transparent p-0;
+  }
+  .prose-content img {
+    @apply my-3 max-w-full rounded-lg;
+  }
+  .ProseMirror {
+    @apply min-h-[260px] px-4 py-3 outline-none;
+  }
+  .ProseMirror p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    @apply pointer-events-none float-left h-0 text-muted;
+  }
+}
