@@ -27,14 +27,20 @@ export function ResetPasswordPage() {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
   const [invalidLink, setInvalidLink] = useState(false);
+  // Set once the forced change succeeds, so the "already signed in" redirect below can't win the race.
+  const [completed, setCompleted] = useState(false);
   const {
     register,
     handleSubmit,
     watch,
     formState: { errors, isSubmitting },
-  } = useForm<Values>({ resolver: zodResolver(newPasswordSchema), defaultValues: { password: '', confirm: '' } });
+  } = useForm<Values>({
+    resolver: zodResolver(newPasswordSchema),
+    defaultValues: { password: '', confirm: '' },
+  });
   const password = watch('password');
 
+  if (completed) return <Navigate to="/dashboard" replace />;
   if (status === 'loading') return <FullPageLoader />;
   const forced = !token && status === 'authenticated' && !!user?.mustChangePassword;
   if (!token && status === 'authenticated' && !forced) return <Navigate to="/profile" replace />;
@@ -44,10 +50,12 @@ export function ResetPasswordPage() {
     setError(null);
     try {
       if (forced) {
-        const { data } = await api.post<SessionResponse>('/auth/change-password', { newPassword: v.password });
+        const { data } = await api.post<SessionResponse>('/auth/change-password', {
+          newPassword: v.password,
+        });
+        setCompleted(true);
         setSession(data);
         toast.success('Your password is set. Welcome to PIF Admin Panel!');
-        navigate('/dashboard', { replace: true });
       } else {
         await api.post('/auth/reset-password', { token, password: v.password });
         toast.success('Your password has been reset. Sign in with your new password.');
@@ -72,7 +80,11 @@ export function ResetPasswordPage() {
   return (
     <AuthLayout
       title={forced ? 'Set your new password' : 'Choose a new password'}
-      subtitle={forced ? 'For your security, replace the temporary password from your welcome email before continuing.' : 'Pick a strong password you have not used here before.'}
+      subtitle={
+        forced
+          ? 'For your security, replace the temporary password from your welcome email before continuing.'
+          : 'Pick a strong password you have not used here before.'
+      }
     >
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         {forced && (
@@ -81,26 +93,43 @@ export function ResetPasswordPage() {
           </div>
         )}
         {error && (
-          <div role="alert" className="flex items-start gap-2 rounded-md border border-danger/30 bg-white/80 px-3 py-2 text-[0.8125rem] text-danger">
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-danger/30 bg-white/80 px-3 py-2 text-[0.8125rem] text-danger-ink"
+          >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {error}
           </div>
         )}
         <div>
           <Field label="New password" error={errors.password?.message}>
-            <PasswordInput large autoComplete="new-password" placeholder="New password" {...register('password')} />
+            <PasswordInput
+              large
+              autoComplete="new-password"
+              placeholder="New password"
+              {...register('password')}
+            />
           </Field>
           <PasswordChecklist value={password} tone="brand" />
         </div>
         <Field label="Confirm new password" error={errors.confirm?.message}>
-          <PasswordInput large autoComplete="new-password" placeholder="Repeat the new password" {...register('confirm')} />
+          <PasswordInput
+            large
+            autoComplete="new-password"
+            placeholder="Repeat the new password"
+            {...register('confirm')}
+          />
         </Field>
         <Button type="submit" variant="brand" size="lg" className="w-full" loading={isSubmitting}>
           {forced ? 'Save password & continue' : 'Reset password'}
         </Button>
         {forced ? (
           <p className="text-center">
-            <button type="button" onClick={() => void logout()} className="text-[0.85rem] text-brand underline underline-offset-2">
+            <button
+              type="button"
+              onClick={() => void logout()}
+              className="text-[0.85rem] text-brand underline underline-offset-2"
+            >
               Sign out instead
             </button>
           </p>

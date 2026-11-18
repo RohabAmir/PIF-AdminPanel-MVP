@@ -47,7 +47,10 @@ export function VerifyOtpPage() {
       setSubmitting(true);
       setError(null);
       try {
-        const { data } = await api.post<SessionResponse>('/auth/verify-otp', { otpSessionToken: session.otpSessionToken, code });
+        const { data } = await api.post<SessionResponse>('/auth/verify-otp', {
+          otpSessionToken: session.otpSessionToken,
+          code,
+        });
         otpSession.clear();
         setSession(data);
         if (data.user.mustChangePassword) {
@@ -98,11 +101,22 @@ export function VerifyOtpPage() {
     setResending(true);
     setError(null);
     try {
-      const { data } = await api.post<{ resendCooldownSeconds: number; resendsRemaining: number; expiresInSeconds: number; demoOtp?: string }>('/auth/resend-otp', {
+      const { data } = await api.post<{
+        resendCooldownSeconds: number;
+        resendsRemaining: number;
+        expiresInSeconds: number;
+        demoOtp?: string;
+      }>('/auth/resend-otp', {
         otpSessionToken: session.otpSessionToken,
       });
       const t = Date.now();
-      const updated = { ...session, resendAvailableAt: t + data.resendCooldownSeconds * 1000, resendsRemaining: data.resendsRemaining, expiresAt: t + data.expiresInSeconds * 1000, demoOtp: data.demoOtp };
+      const updated = {
+        ...session,
+        resendAvailableAt: t + data.resendCooldownSeconds * 1000,
+        resendsRemaining: data.resendsRemaining,
+        expiresAt: t + data.expiresInSeconds * 1000,
+        demoOtp: data.demoOtp,
+      };
       otpSession.set(updated);
       setSessionState(updated);
       setDigits(Array(LENGTH).fill(''));
@@ -130,7 +144,10 @@ export function VerifyOtpPage() {
       }
     >
       {session.demoOtp && (
-        <div className="mb-4 flex items-center gap-2 rounded-md border border-amber/40 bg-amber/15 px-3 py-2 text-[0.8125rem] text-brand" data-testid="demo-otp">
+        <div
+          className="mb-4 flex items-center gap-2 rounded-md border border-amber/40 bg-amber/15 px-3 py-2 text-[0.8125rem] text-brand"
+          data-testid="demo-otp"
+        >
           <KeyRound className="h-4 w-4 shrink-0" aria-hidden />
           <span>
             Demo hint: your code is <b className="font-mono tracking-widest">{session.demoOtp}</b>
@@ -138,7 +155,10 @@ export function VerifyOtpPage() {
         </div>
       )}
       {error && (
-        <div role="alert" className="mb-4 flex items-start gap-2 rounded-md border border-danger/30 bg-white/80 px-3 py-2 text-[0.8125rem] text-danger">
+        <div
+          role="alert"
+          className="mb-4 flex items-start gap-2 rounded-md border border-danger/30 bg-white/80 px-3 py-2 text-[0.8125rem] text-danger-ink"
+        >
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           {error}
         </div>
@@ -152,7 +172,10 @@ export function VerifyOtpPage() {
       >
         <fieldset>
           <legend className="sr-only">Verification code</legend>
-          <div className="flex justify-between gap-2" onPaste={(e) => onPaste(e as unknown as ClipboardEvent<HTMLInputElement>)}>
+          <div
+            className="flex justify-between gap-2"
+            onPaste={(e) => onPaste(e as unknown as ClipboardEvent<HTMLInputElement>)}
+          >
             {digits.map((d, i) => (
               <input
                 key={i}
@@ -176,7 +199,11 @@ export function VerifyOtpPage() {
         </fieldset>
         <p className="mt-3 flex items-center justify-center gap-1.5 text-xs text-brand/80" aria-live="polite">
           <MailCheck className="h-3.5 w-3.5" aria-hidden />
-          {expiresIn > 0 ? <>Code expires in {fmt(expiresIn)}</> : <>This code has expired — request a new one.</>}
+          {expiresIn > 0 ? (
+            <>Code expires in {fmt(expiresIn)}</>
+          ) : (
+            <>This code has expired — request a new one.</>
+          )}
         </p>
         <Button type="submit" variant="brand" size="lg" className="mt-5 w-full" loading={submitting}>
           Verify &amp; continue
@@ -184,13 +211,26 @@ export function VerifyOtpPage() {
       </form>
       <div className="mt-5 flex flex-col items-center gap-2 text-[0.8125rem] text-brand">
         {session.resendsRemaining > 0 ? (
-          <button type="button" onClick={resend} disabled={cooldown > 0 || resending} className="font-semibold underline underline-offset-2 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60">
-            {cooldown > 0 ? `Resend code in ${Math.ceil(cooldown / 1000)}s` : resending ? 'Sending…' : `Resend code (${session.resendsRemaining} left)`}
+          <button
+            type="button"
+            onClick={resend}
+            disabled={cooldown > 0 || resending}
+            className="font-semibold underline underline-offset-2 disabled:cursor-not-allowed disabled:no-underline disabled:opacity-60"
+          >
+            {cooldown > 0
+              ? `Resend code in ${Math.ceil(cooldown / 1000)}s`
+              : resending
+                ? 'Sending…'
+                : `Resend code (${session.resendsRemaining} left)`}
           </button>
         ) : (
           <span className="text-xs">No resends left for this sign-in.</span>
         )}
-        <Link to="/login" onClick={() => otpSession.clear()} className="text-xs text-brand/80 hover:underline">
+        <Link
+          to="/login"
+          onClick={() => otpSession.clear()}
+          className="text-xs text-brand/80 hover:underline"
+        >
           Use a different account
         </Link>
       </div>

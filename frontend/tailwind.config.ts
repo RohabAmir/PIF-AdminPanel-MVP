@@ -11,7 +11,9 @@ export default {
       colors: {
         body: '#F0F1F7',
         ink: '#333335',
-        muted: '#8C9097',
+        // Original muted grey (#8C9097) fails WCAG AA for small text; darker shade of the same hue for text.
+        muted: '#646A75',
+        'muted-brand': '#8C9097',
         line: '#F3F3F3',
         field: '#E9EDF6',
         sidebar: { DEFAULT: '#1E1E2D', text: '#A3AED1', hover: '#27273A' },
@@ -22,10 +24,10 @@ export default {
         amber: '#F59E0B',
         violet: '#7D53B4',
         secondary: '#23B7E5',
-        success: '#26BF94',
-        warning: '#F5B849',
-        info: '#49B6F5',
-        danger: '#E6533C',
+        success: { DEFAULT: '#26BF94', ink: '#0B6E52' },
+        warning: { DEFAULT: '#F5B849', ink: '#8A5A00' },
+        info: { DEFAULT: '#49B6F5', ink: '#1D6A9A' },
+        danger: { DEFAULT: '#E6533C', ink: '#B4351F', strong: '#C9402B' },
       },
       fontFamily: {
         sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
@@ -51,7 +53,10 @@ export default {
       keyframes: {
         'fade-in': { from: { opacity: '0' }, to: { opacity: '1' } },
         'slide-in-right': { from: { transform: 'translateX(100%)' }, to: { transform: 'translateX(0)' } },
-        'zoom-in': { from: { opacity: '0', transform: 'scale(.96)' }, to: { opacity: '1', transform: 'scale(1)' } },
+        'zoom-in': {
+          from: { opacity: '0', transform: 'scale(.96)' },
+          to: { opacity: '1', transform: 'scale(1)' },
+        },
       },
       animation: {
         'fade-in': 'fade-in .15s ease-out',

@@ -11,11 +11,12 @@ export const buttonVariants = cva(
       variant: {
         primary: 'bg-accent text-white shadow-sm hover:bg-accent-light',
         violet: 'bg-primary text-white shadow-sm hover:bg-primary-700',
-        brand: 'border border-brand-border bg-brand text-white hover:border-brand hover:bg-brand-hover hover:text-brand',
+        brand:
+          'border border-brand-border bg-brand text-white hover:border-brand hover:bg-brand-hover hover:text-brand',
         outline: 'border border-accent-border bg-white text-accent hover:bg-accent-soft',
         ghost: 'text-accent hover:bg-accent-soft',
-        danger: 'bg-danger text-white hover:bg-danger/90',
-        'danger-ghost': 'text-danger hover:bg-danger/10',
+        danger: 'bg-danger-strong text-white hover:bg-danger-ink',
+        'danger-ghost': 'text-danger-ink hover:bg-danger/10',
         success: 'bg-success text-white hover:bg-success/90',
       },
       size: {
@@ -29,7 +30,8 @@ export const buttonVariants = cva(
   },
 );
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
+export interface ButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement>, VariantProps<typeof buttonVariants> {
   asChild?: boolean;
   loading?: boolean;
 }

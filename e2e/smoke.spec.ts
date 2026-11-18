@@ -43,7 +43,7 @@ test('login → OTP → dashboard → add user → logout → first login → fo
   const sentAfter = new Date();
   await dialog.getByRole('button', { name: /Add user & send invite/ }).click();
   await expect(page.getByText(/welcome email with a temporary password is on its way/)).toBeVisible();
-  await expect(page.getByRole('row', { name: /Smoke Tester/ })).toContainText('Pending first login');
+  await expect(page.getByRole('row').filter({ hasText: email })).toContainText('Pending first login');
   const welcome = await waitForEmail(email, /account is ready/, sentAfter);
   const temp = tempPasswordFrom(welcome.html);
 

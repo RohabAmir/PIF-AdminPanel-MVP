@@ -23,7 +23,9 @@ export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobil
 
   return (
     <>
-      {mobileOpen && <div className="fixed inset-0 z-40 bg-sidebar/50 lg:hidden" onClick={onCloseMobile} aria-hidden />}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 bg-sidebar/50 lg:hidden" onClick={onCloseMobile} aria-hidden />
+      )}
       <aside
         id="app-sidebar"
         aria-label="Main navigation"
@@ -34,12 +36,22 @@ export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobil
         )}
       >
         <div className="flex h-[60px] shrink-0 items-center justify-between border-b border-white/10 px-4">
-          <NavLink to="/dashboard" className={cn('flex flex-1 items-center justify-center', collapsed && 'lg:mx-auto')} onClick={onCloseMobile} aria-label="PIF Admin Panel — dashboard">
+          <NavLink
+            to="/dashboard"
+            className={cn('flex flex-1 items-center justify-center', collapsed && 'lg:mx-auto')}
+            onClick={onCloseMobile}
+            aria-label="PIF Admin Panel — dashboard"
+          >
             {/* Original sidebar treatment: the four-mark logo strip; the single mark when collapsed. */}
             <img src={strip} alt="" className={cn('h-6 w-auto', collapsed && 'lg:hidden')} />
             <img src={mark} alt="" className={cn('hidden h-8 w-8', collapsed && 'lg:block')} />
           </NavLink>
-          <button type="button" className="rounded-md p-1 text-sidebar-text hover:text-white lg:hidden" onClick={onCloseMobile} aria-label="Close menu">
+          <button
+            type="button"
+            className="rounded-md p-1 text-sidebar-text hover:text-white lg:hidden"
+            onClick={onCloseMobile}
+            aria-label="Close menu"
+          >
             <X className="h-5 w-5" />
           </button>
         </div>
@@ -48,7 +60,12 @@ export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobil
           {groups.map((g) => (
             <div key={g.label ?? 'main'} className="mb-4">
               {g.label && (
-                <p className={cn('mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-text/60', collapsed && 'lg:hidden')}>
+                <p
+                  className={cn(
+                    'mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-sidebar-text/90',
+                    collapsed && 'lg:hidden',
+                  )}
+                >
                   {g.siteScoped && site ? site.name : g.label}
                 </p>
               )}
@@ -63,13 +80,18 @@ export function Sidebar({ collapsed, onToggleCollapsed, mobileOpen, onCloseMobil
                         cn(
                           'group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13.6px] font-medium transition-colors',
                           collapsed && 'lg:justify-center lg:px-0',
-                          isActive ? 'bg-white/10 text-white' : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
+                          isActive
+                            ? 'bg-white/10 text-white'
+                            : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
                         )
                       }
                     >
                       {({ isActive }) => (
                         <>
-                          <item.icon className={cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-[#B79CF0]' : '')} aria-hidden />
+                          <item.icon
+                            className={cn('h-[18px] w-[18px] shrink-0', isActive ? 'text-[#B79CF0]' : '')}
+                            aria-hidden
+                          />
                           <span className={cn('truncate', collapsed && 'lg:sr-only')}>{item.label}</span>
                         </>
                       )}

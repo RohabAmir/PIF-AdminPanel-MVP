@@ -9,7 +9,9 @@ import { AuthLayout } from '@/components/layout/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Field } from '@/components/ui/field';
 
-const schema = z.object({ email: z.string().trim().min(1, 'Email is required.').email('Enter a valid email address.') });
+const schema = z.object({
+  email: z.string().trim().min(1, 'Email is required.').email('Enter a valid email address.'),
+});
 
 export function ForgotPasswordPage() {
   const [sentTo, setSentTo] = useState<string | null>(null);
@@ -24,7 +26,9 @@ export function ForgotPasswordPage() {
   const onSubmit = async ({ email }: { email: string }) => {
     setError(null);
     try {
-      const { data } = await api.post<{ message: string }>('/auth/forgot-password', { email: email.trim().toLowerCase() });
+      const { data } = await api.post<{ message: string }>('/auth/forgot-password', {
+        email: email.trim().toLowerCase(),
+      });
       setMessage(data.message);
       setSentTo(email);
     } catch (err) {
@@ -43,7 +47,10 @@ export function ForgotPasswordPage() {
             {message}
           </p>
           <p className="mt-2 text-xs text-brand/75">The link expires in 30 minutes and can be used once.</p>
-          <Link to="/login" className="mt-6 inline-flex items-center gap-1.5 text-[0.85rem] font-semibold text-brand underline underline-offset-2">
+          <Link
+            to="/login"
+            className="mt-6 inline-flex items-center gap-1.5 text-[0.85rem] font-semibold text-brand underline underline-offset-2"
+          >
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back to sign in
           </Link>
         </div>
@@ -52,10 +59,16 @@ export function ForgotPasswordPage() {
   }
 
   return (
-    <AuthLayout title="Forgot your password?" subtitle="Enter your email and we'll send you a secure reset link.">
+    <AuthLayout
+      title="Forgot your password?"
+      subtitle="Enter your email and we'll send you a secure reset link."
+    >
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         {error && (
-          <div role="alert" className="flex items-start gap-2 rounded-md border border-danger/30 bg-white/80 px-3 py-2 text-[0.8125rem] text-danger">
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-danger/30 bg-white/80 px-3 py-2 text-[0.8125rem] text-danger-ink"
+          >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {error}
           </div>
@@ -73,7 +86,10 @@ export function ForgotPasswordPage() {
           Send reset link
         </Button>
         <p className="text-center">
-          <Link to="/login" className="inline-flex items-center gap-1.5 text-[0.85rem] text-brand underline underline-offset-2">
+          <Link
+            to="/login"
+            className="inline-flex items-center gap-1.5 text-[0.85rem] text-brand underline underline-offset-2"
+          >
             <ArrowLeft className="h-4 w-4" aria-hidden /> Back to sign in
           </Link>
         </p>

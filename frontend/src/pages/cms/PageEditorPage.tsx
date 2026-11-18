@@ -112,7 +112,7 @@ function SortableRow({
           <span className="block truncate text-[0.8125rem] font-semibold">
             {section.name}
             {dirty && (
-              <span className="ml-1 text-warning" aria-label="unsaved changes">
+              <span className="ml-1 text-warning-ink" aria-label="unsaved changes">
                 ●
               </span>
             )}
@@ -407,12 +407,15 @@ export default function PageEditorPage() {
         <div className="card px-4 sm:px-5">
           <TabsList className="border-b-0">
             <TabsTrigger value="sections">
-              Sections ({order.length}){dirtySections.length > 0 && <span className="text-warning">●</span>}
+              Sections ({order.length})
+              {dirtySections.length > 0 && <span className="text-warning-ink">●</span>}
             </TabsTrigger>
             <TabsTrigger value="details">
-              Details{details.formState.isDirty && <span className="text-warning">●</span>}
+              Details{details.formState.isDirty && <span className="text-warning-ink">●</span>}
             </TabsTrigger>
-            <TabsTrigger value="seo">SEO{seoDirty && <span className="text-warning">●</span>}</TabsTrigger>
+            <TabsTrigger value="seo">
+              SEO{seoDirty && <span className="text-warning-ink">●</span>}
+            </TabsTrigger>
           </TabsList>
         </div>
 

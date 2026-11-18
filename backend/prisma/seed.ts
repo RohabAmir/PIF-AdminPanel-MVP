@@ -327,7 +327,7 @@ async function main() {
       name: 'Lina Farouk',
       role: Role.EDITOR,
       sites: [tuaja.id],
-      color: '#26BF94',
+      color: '#0B6E52',
     },
     {
       email: 'viewer@pifdemo.com',
@@ -370,7 +370,7 @@ async function main() {
       mustChangePassword: true,
       tempPasswordExpiresAt: new Date(Date.now() + 7 * DAY),
       passwordHash: unusable,
-      avatarColor: '#23B7E5',
+      avatarColor: '#1D6A9A',
       sites: { create: [{ siteId: dan.id }] },
     },
   });
@@ -384,7 +384,7 @@ async function main() {
       status: UserStatus.INACTIVE,
       mustChangePassword: false,
       passwordHash: unusable,
-      avatarColor: '#E6533C',
+      avatarColor: '#C9402B',
       lastLoginAt: new Date(Date.now() - 20 * DAY),
       sites: { create: [{ siteId: tuaja.id }, { siteId: dan.id }] },
     },

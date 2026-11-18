@@ -34,7 +34,9 @@ export function Modal({ open, onOpenChange, title, description, children, footer
               {description ? (
                 <D.Description className="mt-0.5 text-xs text-muted">{description}</D.Description>
               ) : (
-                <D.Description className="sr-only">{typeof title === 'string' ? title : 'Dialog'}</D.Description>
+                <D.Description className="sr-only">
+                  {typeof title === 'string' ? title : 'Dialog'}
+                </D.Description>
               )}
             </div>
             <D.Close className="rounded-md p-1 text-muted hover:bg-body hover:text-ink" aria-label="Close">
@@ -42,7 +44,9 @@ export function Modal({ open, onOpenChange, title, description, children, footer
             </D.Close>
           </div>
           <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-          {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-3">{footer}</div>}
+          {footer && (
+            <div className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-3">{footer}</div>
+          )}
         </D.Content>
       </D.Portal>
     </D.Root>
@@ -50,7 +54,14 @@ export function Modal({ open, onOpenChange, title, description, children, footer
 }
 
 /** Right-side drawer (lead details, log details). */
-export function Drawer({ open, onOpenChange, title, description, children, footer }: Omit<ModalProps, 'size'>) {
+export function Drawer({
+  open,
+  onOpenChange,
+  title,
+  description,
+  children,
+  footer,
+}: Omit<ModalProps, 'size'>) {
   return (
     <D.Root open={open} onOpenChange={onOpenChange}>
       <D.Portal>
@@ -68,7 +79,9 @@ export function Drawer({ open, onOpenChange, title, description, children, foote
             </D.Close>
           </div>
           <div className="scrollbar-thin min-h-0 flex-1 overflow-y-auto px-5 py-4">{children}</div>
-          {footer && <div className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-3">{footer}</div>}
+          {footer && (
+            <div className="flex flex-wrap justify-end gap-2 border-t border-line px-5 py-3">{footer}</div>
+          )}
         </D.Content>
       </D.Portal>
     </D.Root>
@@ -88,14 +101,30 @@ interface ConfirmProps {
   confirmDisabled?: boolean;
 }
 
-export function ConfirmDialog({ open, onOpenChange, title, description, confirmLabel = 'Confirm', tone = 'danger', loading, onConfirm, children, confirmDisabled }: ConfirmProps) {
+export function ConfirmDialog({
+  open,
+  onOpenChange,
+  title,
+  description,
+  confirmLabel = 'Confirm',
+  tone = 'danger',
+  loading,
+  onConfirm,
+  children,
+  confirmDisabled,
+}: ConfirmProps) {
   return (
     <AD.Root open={open} onOpenChange={(o) => !loading && onOpenChange(o)}>
       <AD.Portal>
         <AD.Overlay className="fixed inset-0 z-50 animate-fade-in bg-sidebar/50" />
         <AD.Content className="fixed left-1/2 top-1/2 z-50 w-[calc(100vw-24px)] max-w-md -translate-x-1/2 -translate-y-1/2 animate-zoom-in rounded-card bg-white p-6 shadow-pop focus:outline-none">
           <div className="flex gap-4">
-            <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-full', tone === 'danger' ? 'bg-danger/10 text-danger' : 'bg-accent-soft text-accent')}>
+            <div
+              className={cn(
+                'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+                tone === 'danger' ? 'bg-danger/10 text-danger-ink' : 'bg-accent-soft text-accent',
+              )}
+            >
               <AlertTriangle className="h-5 w-5" aria-hidden />
             </div>
             <div className="min-w-0 flex-1">

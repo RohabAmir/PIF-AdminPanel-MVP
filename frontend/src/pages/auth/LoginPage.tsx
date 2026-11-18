@@ -46,7 +46,10 @@ export function LoginPage() {
   const onSubmit = async (v: Values) => {
     setServerError(null);
     try {
-      const { data } = await api.post<LoginResponse>('/auth/login', { email: v.email.trim().toLowerCase(), password: v.password });
+      const { data } = await api.post<LoginResponse>('/auth/login', {
+        email: v.email.trim().toLowerCase(),
+        password: v.password,
+      });
       const now = Date.now();
       otpSession.set({
         otpSessionToken: data.otpSessionToken,
@@ -68,11 +71,19 @@ export function LoginPage() {
       title="Sign In to Dashboard"
       footer={
         config?.demoMode && config.demoAccounts.length > 0 ? (
-          <section className="mt-4 rounded-lg border border-white/25 bg-sidebar/70 p-4 text-white backdrop-blur" aria-labelledby="demo-title">
-            <h2 id="demo-title" className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white">
+          <section
+            className="mt-4 rounded-lg border border-white/25 bg-sidebar/70 p-4 text-white backdrop-blur"
+            aria-labelledby="demo-title"
+          >
+            <h2
+              id="demo-title"
+              className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-white"
+            >
               <Sparkles className="h-3.5 w-3.5 text-amber" aria-hidden /> Demo accounts
             </h2>
-            <p className="mt-1 text-[11px] text-sidebar-text">One click fills the form. Password for all: {config.demoAccounts[0]?.password}</p>
+            <p className="mt-1 text-[11px] text-sidebar-text">
+              One click fills the form. Password for all: {config.demoAccounts[0]?.password}
+            </p>
             <div className="mt-3 grid grid-cols-2 gap-2">
               {config.demoAccounts.map((a) => (
                 <button
@@ -95,19 +106,36 @@ export function LoginPage() {
     >
       <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-4">
         {serverError && (
-          <div role="alert" className="flex items-start gap-2 rounded-md border border-danger/30 bg-white/80 px-3 py-2 text-[0.8125rem] text-danger">
+          <div
+            role="alert"
+            className="flex items-start gap-2 rounded-md border border-danger/30 bg-white/80 px-3 py-2 text-[0.8125rem] text-danger-ink"
+          >
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
             {serverError}
           </div>
         )}
         <Field label="Email" error={errors.email?.message}>
-          <input type="email" autoComplete="username" placeholder="Write your email" className={authInput} {...register('email')} />
+          <input
+            type="email"
+            autoComplete="username"
+            placeholder="Write your email"
+            className={authInput}
+            {...register('email')}
+          />
         </Field>
         <Field label="Password" error={errors.password?.message}>
-          <PasswordInput large autoComplete="current-password" placeholder="Write your password" {...register('password')} />
+          <PasswordInput
+            large
+            autoComplete="current-password"
+            placeholder="Write your password"
+            {...register('password')}
+          />
         </Field>
         <div className="text-right">
-          <Link to="/forgot-password" className="text-[0.85rem] text-brand underline underline-offset-2 hover:text-brand/80">
+          <Link
+            to="/forgot-password"
+            className="text-[0.85rem] text-brand underline underline-offset-2 hover:text-brand/80"
+          >
             Forgot password?
           </Link>
         </div>

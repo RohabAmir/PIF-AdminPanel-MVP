@@ -212,7 +212,7 @@ export default function BlogEditorPage() {
             <div className="flex flex-wrap items-center gap-2">
               <h1 className="truncate text-xl font-bold">{isNew ? 'New blog post' : post?.title}</h1>
               {post && <ContentStatusBadge status={post.status} />}
-              {dirty && <span className="text-xs font-medium text-warning">Unsaved changes</span>}
+              {dirty && <span className="text-xs font-medium text-warning-ink">Unsaved changes</span>}
             </div>
             <p className="mt-0.5 flex items-center gap-1 text-xs text-muted">
               <Clock className="h-3.5 w-3.5" aria-hidden /> {reading} min read · {words(draft.content)} words
@@ -353,7 +353,7 @@ export default function BlogEditorPage() {
                     {can(P.CONTENT_PUBLISH) ? (
                       <div className="space-y-2 border-t border-line pt-3">
                         {dirty && (
-                          <p className="text-[11px] text-warning">Save your changes before publishing.</p>
+                          <p className="text-[11px] text-warning-ink">Save your changes before publishing.</p>
                         )}
                         {post.status !== 'PUBLISHED' && (
                           <Button

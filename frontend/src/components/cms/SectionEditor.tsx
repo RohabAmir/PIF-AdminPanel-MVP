@@ -9,20 +9,54 @@ import { BLOCKS, type FieldDef } from './section-config';
 
 type Obj = Record<string, unknown>;
 
-function FieldInput({ def, value, onChange, error, disabled }: { def: FieldDef; value: unknown; onChange: (v: unknown) => void; error?: string; disabled?: boolean }) {
+function FieldInput({
+  def,
+  value,
+  onChange,
+  error,
+  disabled,
+}: {
+  def: FieldDef;
+  value: unknown;
+  onChange: (v: unknown) => void;
+  error?: string;
+  disabled?: boolean;
+}) {
   const s = typeof value === 'string' ? value : '';
   switch (def.kind) {
     case 'text':
     case 'url':
       return (
-        <Field label={def.label} required={def.required} error={error} counter={def.kind === 'text' && def.max ? { value: s.length, max: def.max } : undefined}>
-          <Input value={s} disabled={disabled} maxLength={def.kind === 'text' ? def.max : 1000} placeholder={def.placeholder} onChange={(e) => onChange(e.target.value)} />
+        <Field
+          label={def.label}
+          required={def.required}
+          error={error}
+          counter={def.kind === 'text' && def.max ? { value: s.length, max: def.max } : undefined}
+        >
+          <Input
+            value={s}
+            disabled={disabled}
+            maxLength={def.kind === 'text' ? def.max : 1000}
+            placeholder={def.placeholder}
+            onChange={(e) => onChange(e.target.value)}
+          />
         </Field>
       );
     case 'textarea':
       return (
-        <Field label={def.label} required={def.required} error={error} counter={def.max ? { value: s.length, max: def.max } : undefined}>
-          <Textarea value={s} disabled={disabled} rows={3} maxLength={def.max} onChange={(e) => onChange(e.target.value)} />
+        <Field
+          label={def.label}
+          required={def.required}
+          error={error}
+          counter={def.max ? { value: s.length, max: def.max } : undefined}
+        >
+          <Textarea
+            value={s}
+            disabled={disabled}
+            rows={3}
+            maxLength={def.max}
+            onChange={(e) => onChange(e.target.value)}
+          />
         </Field>
       );
     case 'image':
@@ -53,9 +87,16 @@ function FieldInput({ def, value, onChange, error, disabled }: { def: FieldDef; 
       return (
         <fieldset className="rounded-xl border border-line p-3">
           <legend className="px-1 text-xs font-semibold text-ink/80">
-            {def.label} <span className="font-normal text-muted">({items.length}/{def.max})</span>
+            {def.label}{' '}
+            <span className="font-normal text-muted">
+              ({items.length}/{def.max})
+            </span>
           </legend>
-          {error && <p role="alert" className="mb-2 text-[11px] font-medium text-danger">{error}</p>}
+          {error && (
+            <p role="alert" className="mb-2 text-[11px] font-medium text-danger-ink">
+              {error}
+            </p>
+          )}
           <ol className="space-y-3">
             {items.map((item, i) => (
               <li key={i} className="rounded-lg bg-body/60 p-3">
@@ -65,13 +106,35 @@ function FieldInput({ def, value, onChange, error, disabled }: { def: FieldDef; 
                   </span>
                   {!disabled && (
                     <div className="flex gap-0.5">
-                      <Button size="icon" variant="ghost" disabled={i === 0} aria-label={`Move ${def.itemLabel} ${i + 1} up`} onClick={() => update(items.map((x, j) => (j === i - 1 ? items[i]! : j === i ? items[i - 1]! : x)))}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled={i === 0}
+                        aria-label={`Move ${def.itemLabel} ${i + 1} up`}
+                        onClick={() =>
+                          update(items.map((x, j) => (j === i - 1 ? items[i]! : j === i ? items[i - 1]! : x)))
+                        }
+                      >
                         <ArrowUp className="h-3.5 w-3.5" />
                       </Button>
-                      <Button size="icon" variant="ghost" disabled={i === items.length - 1} aria-label={`Move ${def.itemLabel} ${i + 1} down`} onClick={() => update(items.map((x, j) => (j === i + 1 ? items[i]! : j === i ? items[i + 1]! : x)))}>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        disabled={i === items.length - 1}
+                        aria-label={`Move ${def.itemLabel} ${i + 1} down`}
+                        onClick={() =>
+                          update(items.map((x, j) => (j === i + 1 ? items[i]! : j === i ? items[i + 1]! : x)))
+                        }
+                      >
                         <ArrowDown className="h-3.5 w-3.5" />
                       </Button>
-                      <Button size="icon" variant="danger-ghost" disabled={items.length <= def.min} aria-label={`Remove ${def.itemLabel} ${i + 1}`} onClick={() => update(items.filter((_, j) => j !== i))}>
+                      <Button
+                        size="icon"
+                        variant="danger-ghost"
+                        disabled={items.length <= def.min}
+                        aria-label={`Remove ${def.itemLabel} ${i + 1}`}
+                        onClick={() => update(items.filter((_, j) => j !== i))}
+                      >
                         <Trash2 className="h-3.5 w-3.5" />
                       </Button>
                     </div>
@@ -79,14 +142,26 @@ function FieldInput({ def, value, onChange, error, disabled }: { def: FieldDef; 
                 </div>
                 <div className="grid grid-cols-1 gap-3">
                   {def.itemFields.map((f) => (
-                    <FieldInput key={f.key} def={f} value={item[f.key]} disabled={disabled} error={undefined} onChange={(v) => update(items.map((x, j) => (j === i ? { ...x, [f.key]: v } : x)))} />
+                    <FieldInput
+                      key={f.key}
+                      def={f}
+                      value={item[f.key]}
+                      disabled={disabled}
+                      error={undefined}
+                      onChange={(v) => update(items.map((x, j) => (j === i ? { ...x, [f.key]: v } : x)))}
+                    />
                   ))}
                 </div>
               </li>
             ))}
           </ol>
           {!disabled && items.length < def.max && (
-            <Button size="sm" variant="outline" className="mt-3" onClick={() => update([...items, { ...def.newItem }])}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-3"
+              onClick={() => update([...items, { ...def.newItem }])}
+            >
               <Plus className="h-4 w-4" /> Add {def.itemLabel.toLowerCase()}
             </Button>
           )}
@@ -97,7 +172,19 @@ function FieldInput({ def, value, onChange, error, disabled }: { def: FieldDef; 
 }
 
 /** Typed editor for a section's JSON content, generated from the block schema. */
-export function SectionEditor({ type, content, onChange, errors, disabled }: { type: SectionType; content: Obj; onChange: (c: Obj) => void; errors: Record<string, string>; disabled?: boolean }) {
+export function SectionEditor({
+  type,
+  content,
+  onChange,
+  errors,
+  disabled,
+}: {
+  type: SectionType;
+  content: Obj;
+  onChange: (c: Obj) => void;
+  errors: Record<string, string>;
+  disabled?: boolean;
+}) {
   return (
     <div className="space-y-4">
       {BLOCKS[type].fields.map((f) => {
@@ -108,7 +195,10 @@ export function SectionEditor({ type, content, onChange, errors, disabled }: { t
             def={f}
             value={content[f.key]}
             disabled={disabled}
-            error={errors[f.key] ?? (nested ? `${nested[1]} (item ${Number(nested[0].split('.')[1]) + 1})` : undefined)}
+            error={
+              errors[f.key] ??
+              (nested ? `${nested[1]} (item ${Number(nested[0].split('.')[1]) + 1})` : undefined)
+            }
             onChange={(v) => onChange({ ...content, [f.key]: v })}
           />
         );
