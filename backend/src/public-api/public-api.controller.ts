@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Header, HttpCode, HttpStatus, Param, Post, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Header,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { ApiProperty, ApiPropertyOptional, ApiSecurity, ApiTags } from '@nestjs/swagger';
 import { Throttle } from '@nestjs/throttler';
 import type { Site } from '@prisma/client';
@@ -89,7 +100,9 @@ export class PublicApiController {
   @Post('forms/:key/submit')
   @HttpCode(HttpStatus.CREATED)
   @Header('Cache-Control', 'no-store')
-  @Throttle({ default: { limit: () => Number(process.env.PUBLIC_FORM_RATE_LIMIT ?? 10), ttl: 60_000 } })
+  @Throttle({
+    default: { limit: () => Number(process.env.PUBLIC_FORM_RATE_LIMIT ?? 10), ttl: 60_000 },
+  })
   submit(@CurrentSite() site: Site, @Param('key') key: string, @Body() dto: SubmitFormDto) {
     return this.api.submit(site, key, dto.data, dto.sourcePage, dto._hp);
   }

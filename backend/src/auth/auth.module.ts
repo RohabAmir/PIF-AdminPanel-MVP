@@ -13,7 +13,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 @Module({
   imports: [PassportModule, JwtModule.register({})],
   controllers: [AuthController],
-  providers: [AuthService, OtpService, PasswordService, TokenService, EmailRateLimiter, JwtStrategy],
+  providers: [
+    AuthService,
+    OtpService,
+    PasswordService,
+    TokenService,
+    EmailRateLimiter,
+    JwtStrategy,
+  ],
   exports: [PasswordService, TokenService, AuthService],
 })
 export class AuthModule {}

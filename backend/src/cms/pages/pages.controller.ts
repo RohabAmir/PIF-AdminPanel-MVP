@@ -1,7 +1,26 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Put, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Put,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { PageStatus, Site } from '@prisma/client';
-import { Audit, CurrentSite, CurrentUser, RequirePermission, SiteScoped } from '../../common/decorators';
+import {
+  Audit,
+  CurrentSite,
+  CurrentUser,
+  RequirePermission,
+  SiteScoped,
+} from '../../common/decorators';
 import { Permission } from '../../common/permissions';
 import type { AuthUser } from '../../common/types';
 import { PagesService } from './pages.service';
@@ -43,7 +62,11 @@ export class PagesController {
   @Patch(':id')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('page.updated', 'page')
-  update(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdatePageDto) {
+  update(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdatePageDto,
+  ) {
     return this.pages.update(site.id, id, dto);
   }
 
@@ -74,7 +97,11 @@ export class PagesController {
   @Post(':id/duplicate')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('page.duplicated', 'page')
-  duplicate(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: AuthUser) {
+  duplicate(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.pages.duplicate(site.id, id, user);
   }
 

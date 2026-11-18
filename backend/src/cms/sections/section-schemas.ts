@@ -31,7 +31,13 @@ export const SECTION_SCHEMAS: Record<SectionType, Joi.ObjectSchema> = {
   FEATURE_CARDS: Joi.object({
     heading,
     items: Joi.array()
-      .items(Joi.object({ icon: text(40).default(''), title: Joi.string().trim().min(1).max(80).required(), description: text(400).default('') }))
+      .items(
+        Joi.object({
+          icon: text(40).default(''),
+          title: Joi.string().trim().min(1).max(80).required(),
+          description: text(400).default(''),
+        }),
+      )
       .min(1)
       .max(12)
       .required(),
@@ -39,7 +45,12 @@ export const SECTION_SCHEMAS: Record<SectionType, Joi.ObjectSchema> = {
   STATS: Joi.object({
     heading: text(160).default(''),
     items: Joi.array()
-      .items(Joi.object({ value: Joi.string().trim().min(1).max(20).required(), label: Joi.string().trim().min(1).max(60).required() }))
+      .items(
+        Joi.object({
+          value: Joi.string().trim().min(1).max(20).required(),
+          label: Joi.string().trim().min(1).max(60).required(),
+        }),
+      )
       .min(1)
       .max(8)
       .required(),
@@ -47,7 +58,13 @@ export const SECTION_SCHEMAS: Record<SectionType, Joi.ObjectSchema> = {
   TESTIMONIALS: Joi.object({
     heading,
     items: Joi.array()
-      .items(Joi.object({ quote: Joi.string().trim().min(1).max(600).required(), author: Joi.string().trim().min(1).max(80).required(), role: text(80).default('') }))
+      .items(
+        Joi.object({
+          quote: Joi.string().trim().min(1).max(600).required(),
+          author: Joi.string().trim().min(1).max(80).required(),
+          role: text(80).default(''),
+        }),
+      )
       .min(1)
       .max(12)
       .required(),
@@ -55,7 +72,12 @@ export const SECTION_SCHEMAS: Record<SectionType, Joi.ObjectSchema> = {
   FAQ: Joi.object({
     heading,
     items: Joi.array()
-      .items(Joi.object({ question: Joi.string().trim().min(1).max(200).required(), answer: Joi.string().trim().min(1).max(2000).required() }))
+      .items(
+        Joi.object({
+          question: Joi.string().trim().min(1).max(200).required(),
+          answer: Joi.string().trim().min(1).max(2000).required(),
+        }),
+      )
       .min(1)
       .max(30)
       .required(),
@@ -77,22 +99,65 @@ export const SECTION_SCHEMAS: Record<SectionType, Joi.ObjectSchema> = {
 };
 
 export const SECTION_DEFAULTS: Record<SectionType, Record<string, unknown>> = {
-  HERO: { heading: 'Welcome to our website', subheading: 'A short supporting line', backgroundImage: '', ctaLabel: 'Learn more', ctaUrl: '/about' },
+  HERO: {
+    heading: 'Welcome to our website',
+    subheading: 'A short supporting line',
+    backgroundImage: '',
+    ctaLabel: 'Learn more',
+    ctaUrl: '/about',
+  },
   RICH_TEXT: { html: '<p>Start writing your content here.</p>' },
-  IMAGE_TEXT: { heading: 'Tell your story', body: 'Describe what makes you different.', image: '', imageAlt: '', imagePosition: 'left' },
-  FEATURE_CARDS: { heading: 'Why choose us', items: [{ icon: 'star', title: 'Quality', description: 'Describe this feature.' }] },
+  IMAGE_TEXT: {
+    heading: 'Tell your story',
+    body: 'Describe what makes you different.',
+    image: '',
+    imageAlt: '',
+    imagePosition: 'left',
+  },
+  FEATURE_CARDS: {
+    heading: 'Why choose us',
+    items: [{ icon: 'star', title: 'Quality', description: 'Describe this feature.' }],
+  },
   STATS: { heading: 'By the numbers', items: [{ value: '100+', label: 'Happy guests' }] },
-  TESTIMONIALS: { heading: 'What our guests say', items: [{ quote: 'A wonderful experience.', author: 'A happy guest', role: '' }] },
-  FAQ: { heading: 'Frequently asked questions', items: [{ question: 'How do I book?', answer: 'Use the booking form on this page.' }] },
-  CTA: { heading: 'Ready to get started?', body: '', buttonLabel: 'Contact us', buttonUrl: '/contact' },
-  GALLERY: { heading: 'Gallery', images: [{ url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800', alt: 'Landscape' }] },
+  TESTIMONIALS: {
+    heading: 'What our guests say',
+    items: [{ quote: 'A wonderful experience.', author: 'A happy guest', role: '' }],
+  },
+  FAQ: {
+    heading: 'Frequently asked questions',
+    items: [{ question: 'How do I book?', answer: 'Use the booking form on this page.' }],
+  },
+  CTA: {
+    heading: 'Ready to get started?',
+    body: '',
+    buttonLabel: 'Contact us',
+    buttonUrl: '/contact',
+  },
+  GALLERY: {
+    heading: 'Gallery',
+    images: [
+      {
+        url: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?w=800',
+        alt: 'Landscape',
+      },
+    ],
+  },
 };
 
-export function validateSectionContent(type: SectionType, content: unknown): { value?: Record<string, unknown>; errors?: { field: string; errors: string[] }[] } {
-  const { value, error } = SECTION_SCHEMAS[type].validate(content, { abortEarly: false, stripUnknown: true });
+export function validateSectionContent(
+  type: SectionType,
+  content: unknown,
+): { value?: Record<string, unknown>; errors?: { field: string; errors: string[] }[] } {
+  const { value, error } = SECTION_SCHEMAS[type].validate(content, {
+    abortEarly: false,
+    stripUnknown: true,
+  });
   if (error) {
     return {
-      errors: error.details.map((d) => ({ field: `content.${d.path.join('.')}`, errors: [d.message.replace(/"/g, '')] })),
+      errors: error.details.map((d) => ({
+        field: `content.${d.path.join('.')}`,
+        errors: [d.message.replace(/"/g, '')],
+      })),
     };
   }
   if (type === SectionType.RICH_TEXT) value.html = sanitizeRichText(value.html as string);

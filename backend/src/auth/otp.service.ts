@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Injectable,
+  UnauthorizedException,
+  BadRequestException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import type { OtpCode } from '@prisma/client';
 import { createHmac } from 'node:crypto';
@@ -28,7 +34,9 @@ export class OtpService {
 
   /** OTPs are stored as an HMAC keyed with a server secret, so a DB leak cannot be brute-forced offline. */
   private hash(code: string, otpId: string): string {
-    return createHmac('sha256', this.config.get('JWT_OTP_SECRET')).update(`${otpId}:${code}`).digest('hex');
+    return createHmac('sha256', this.config.get('JWT_OTP_SECRET'))
+      .update(`${otpId}:${code}`)
+      .digest('hex');
   }
 
   async create(userId: string): Promise<{ otp: OtpCode; code: string; sessionToken: string }> {
@@ -45,10 +53,13 @@ export class OtpService {
       where: { id: draft.id },
       data: { codeHash: this.hash(code, draft.id) },
     });
-    const sessionToken = this.jwt.sign({ sub: userId, sid: otp.id, typ: 'otp' } satisfies OtpSessionPayload, {
-      secret: this.config.get('JWT_OTP_SECRET'),
-      expiresIn: OTP_SESSION_TTL,
-    });
+    const sessionToken = this.jwt.sign(
+      { sub: userId, sid: otp.id, typ: 'otp' } satisfies OtpSessionPayload,
+      {
+        secret: this.config.get('JWT_OTP_SECRET'),
+        expiresIn: OTP_SESSION_TTL,
+      },
+    );
     return { otp, code, sessionToken };
   }
 
@@ -124,7 +135,10 @@ export class OtpService {
     if (wait > 0) {
       const s = Math.ceil(wait / 1000);
       throw new HttpException(
-        { message: `Please wait ${s} seconds before requesting a new code.`, details: { retryAfter: s } },
+        {
+          message: `Please wait ${s} seconds before requesting a new code.`,
+          details: { retryAfter: s },
+        },
         HttpStatus.TOO_MANY_REQUESTS,
       );
     }

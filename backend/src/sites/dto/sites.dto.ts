@@ -1,6 +1,15 @@
 import { ApiProperty, ApiPropertyOptional, PartialType } from '@nestjs/swagger';
 import { Transform } from 'class-transformer';
-import { IsBoolean, IsOptional, IsString, IsUrl, Length, Matches, MaxLength, ValidateIf } from 'class-validator';
+import {
+  IsBoolean,
+  IsOptional,
+  IsString,
+  IsUrl,
+  Length,
+  Matches,
+  MaxLength,
+  ValidateIf,
+} from 'class-validator';
 import { PaginationQueryDto } from '../../common/dto/pagination.dto';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
@@ -14,10 +23,15 @@ export class CreateSiteDto {
   @Length(2, 80)
   name: string;
 
-  @ApiPropertyOptional({ example: 'oasis-demo', description: 'Auto-generated from the name if omitted' })
+  @ApiPropertyOptional({
+    example: 'oasis-demo',
+    description: 'Auto-generated from the name if omitted',
+  })
   @IsOptional()
   @Transform(trim)
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: 'Slug may only contain lower-case letters, numbers and dashes.' })
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'Slug may only contain lower-case letters, numbers and dashes.',
+  })
   @MaxLength(60)
   slug?: string;
 
@@ -25,7 +39,9 @@ export class CreateSiteDto {
   @IsOptional()
   @Transform(emptyToNull)
   @ValidateIf((_o, v) => v !== null)
-  @Matches(/^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i, { message: 'Enter a valid domain like example.com' })
+  @Matches(/^(?!-)[a-z0-9-]+(\.[a-z0-9-]+)+$/i, {
+    message: 'Enter a valid domain like example.com',
+  })
   @MaxLength(253)
   domain?: string | null;
 
@@ -33,14 +49,20 @@ export class CreateSiteDto {
   @IsOptional()
   @Transform(emptyToNull)
   @ValidateIf((_o, v) => v !== null && !(typeof v === 'string' && v.startsWith('/uploads/')))
-  @IsUrl({ require_protocol: true, protocols: ['http', 'https'] }, { message: 'Logo must be a valid URL.' })
+  @IsUrl(
+    { require_protocol: true, protocols: ['http', 'https'] },
+    { message: 'Logo must be a valid URL.' },
+  )
   logoUrl?: string | null;
 
   @ApiPropertyOptional()
   @IsOptional()
   @Transform(emptyToNull)
   @ValidateIf((_o, v) => v !== null && !(typeof v === 'string' && v.startsWith('/uploads/')))
-  @IsUrl({ require_protocol: true, protocols: ['http', 'https'] }, { message: 'Favicon must be a valid URL.' })
+  @IsUrl(
+    { require_protocol: true, protocols: ['http', 'https'] },
+    { message: 'Favicon must be a valid URL.' },
+  )
   faviconUrl?: string | null;
 
   @ApiPropertyOptional({ example: '#4A4A89' })

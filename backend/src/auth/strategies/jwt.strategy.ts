@@ -26,7 +26,8 @@ export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
   }
 
   async validate(payload: AccessPayload): Promise<AuthUser> {
-    const expired = () => new UnauthorizedException('Your session has expired. Please sign in again.');
+    const expired = () =>
+      new UnauthorizedException('Your session has expired. Please sign in again.');
     if (payload.typ !== 'access') throw expired();
     const user = await this.prisma.user.findUnique({
       where: { id: payload.sub },

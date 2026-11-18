@@ -35,8 +35,7 @@ export class AuditService {
     const before = sanitizeForLog(entry.before) as Record<string, unknown> | null;
     const after = sanitizeForLog(entry.after) as Record<string, unknown> | null;
     const isObj = (v: unknown) => !!v && typeof v === 'object' && !Array.isArray(v);
-    const diff =
-      isObj(before) && isObj(after) ? diffObjects(before, after) : { before, after };
+    const diff = isObj(before) && isObj(after) ? diffObjects(before, after) : { before, after };
 
     try {
       await this.prisma.activityLog.create({

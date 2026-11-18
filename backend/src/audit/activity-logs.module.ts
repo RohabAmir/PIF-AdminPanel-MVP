@@ -66,7 +66,9 @@ export class ActivityLogsService {
       ...(q.siteId ? { siteId: q.siteId === 'global' ? null : q.siteId } : {}),
       ...(q.action ? { action: q.action } : {}),
       ...(q.entityType ? { entityType: q.entityType } : {}),
-      ...(q.dateFrom || to ? { createdAt: { gte: q.dateFrom ? new Date(q.dateFrom) : undefined, lte: to } } : {}),
+      ...(q.dateFrom || to
+        ? { createdAt: { gte: q.dateFrom ? new Date(q.dateFrom) : undefined, lte: to } }
+        : {}),
       ...(q.search
         ? {
             OR: [
@@ -94,7 +96,11 @@ export class ActivityLogsService {
 
   async facets() {
     const [actions, entities, actors] = await Promise.all([
-      this.prisma.activityLog.findMany({ distinct: ['action'], select: { action: true }, orderBy: { action: 'asc' } }),
+      this.prisma.activityLog.findMany({
+        distinct: ['action'],
+        select: { action: true },
+        orderBy: { action: 'asc' },
+      }),
       this.prisma.activityLog.findMany({
         distinct: ['entityType'],
         where: { entityType: { not: null } },
@@ -116,7 +122,11 @@ export class ActivityLogsService {
   }
 
   async exportCsv(q: LogFiltersDto) {
-    const rows = await this.prisma.activityLog.findMany({ where: this.where(q), orderBy: { createdAt: 'desc' }, take: 20_000 });
+    const rows = await this.prisma.activityLog.findMany({
+      where: this.where(q),
+      orderBy: { createdAt: 'desc' },
+      take: 20_000,
+    });
     await this.audit.log({
       action: 'activity_log.exported',
       entityType: 'activity_log',
@@ -125,7 +135,21 @@ export class ActivityLogsService {
       site: null,
     });
     return toCsv(
-      ['Timestamp (UTC)', 'Actor', 'Actor email', 'Role', 'Website', 'Action', 'Entity', 'Entity id', 'Summary', 'IP', 'Request id', 'Before', 'After'],
+      [
+        'Timestamp (UTC)',
+        'Actor',
+        'Actor email',
+        'Role',
+        'Website',
+        'Action',
+        'Entity',
+        'Entity id',
+        'Summary',
+        'IP',
+        'Request id',
+        'Before',
+        'After',
+      ],
       rows.map((r) => [
         r.createdAt,
         r.actorName,
@@ -168,7 +192,10 @@ export class ActivityLogsController {
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Cache-Control', 'no-store')
   async export(@Query() q: LogFiltersDto, @Res({ passthrough: true }) res: Response) {
-    res.setHeader('Content-Disposition', `attachment; filename="activity-logs-${new Date().toISOString().slice(0, 10)}.csv"`);
+    res.setHeader(
+      'Content-Disposition',
+      `attachment; filename="activity-logs-${new Date().toISOString().slice(0, 10)}.csv"`,
+    );
     return '﻿' + (await this.logs.exportCsv(q));
   }
 }

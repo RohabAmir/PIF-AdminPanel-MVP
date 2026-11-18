@@ -1,7 +1,12 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { BlogStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
-import { paginate, skipTake } from '../../common/dto/pagination.dto';
+import { paginate, skipTake, sortField } from '../../common/dto/pagination.dto';
 import { setAuditHints } from '../../common/context/request-context';
 import { uniqueSlug } from '../../common/utils/slug';
 import type { AuthUser } from '../../common/types';
@@ -37,7 +42,14 @@ export class BlogsService {
         where,
         include: BLOG_INCLUDE,
         omit: { content: true },
-        orderBy: [{ [q.sortBy]: { sort: q.sortOrder ?? (q.sortBy === 'title' ? 'asc' : 'desc'), nulls: 'last' } }, { id: 'asc' }],
+        orderBy: [
+          sortField(
+            q.sortBy,
+            q.sortOrder ?? (q.sortBy === 'title' ? 'asc' : 'desc'),
+            q.sortBy === 'publishedAt',
+          ),
+          { id: 'asc' },
+        ],
         ...skipTake(q),
       }),
       db.blogPost.count({ where }),
@@ -46,26 +58,34 @@ export class BlogsService {
   }
 
   async get(siteId: string, id: string) {
-    const post = await this.prisma.forSite(siteId).blogPost.findUnique({ where: { id }, include: BLOG_INCLUDE });
+    const post = await this.prisma
+      .forSite(siteId)
+      .blogPost.findUnique({ where: { id }, include: BLOG_INCLUDE });
     if (!post) throw new NotFoundException('Blog post not found.');
     return post;
   }
 
   private slugTaken(siteId: string, excludeId?: string) {
     return async (slug: string) =>
-      !!(await this.prisma.forSite(siteId).blogPost.findFirst({ where: { slug, id: { not: excludeId } }, select: { id: true } }));
+      !!(await this.prisma
+        .forSite(siteId)
+        .blogPost.findFirst({ where: { slug, id: { not: excludeId } }, select: { id: true } }));
   }
 
   private async assertCategory(siteId: string, categoryId: string | null | undefined) {
     if (!categoryId) return;
-    const exists = await this.prisma.forSite(siteId).blogCategory.findUnique({ where: { id: categoryId } });
+    const exists = await this.prisma
+      .forSite(siteId)
+      .blogCategory.findUnique({ where: { id: categoryId } });
     if (!exists) throw new BadRequestException('Category not found on this website.');
   }
 
   private slugConflict() {
     return new ConflictException({
       message: 'Another post on this website already uses this slug.',
-      details: [{ field: 'slug', errors: ['Another post on this website already uses this slug.'] }],
+      details: [
+        { field: 'slug', errors: ['Another post on this website already uses this slug.'] },
+      ],
     });
   }
 
@@ -102,7 +122,8 @@ export class BlogsService {
   async update(siteId: string, id: string, dto: UpdateBlogDto) {
     const before = await this.get(siteId, id);
     setAuditHints({ before });
-    if (dto.slug && dto.slug !== before.slug && (await this.slugTaken(siteId, id)(dto.slug))) throw this.slugConflict();
+    if (dto.slug && dto.slug !== before.slug && (await this.slugTaken(siteId, id)(dto.slug)))
+      throw this.slugConflict();
     if (dto.categoryId !== undefined) await this.assertCategory(siteId, dto.categoryId);
     const content = dto.content !== undefined ? sanitizeRichText(dto.content) : undefined;
     return this.prisma.forSite(siteId).blogPost.update({
@@ -116,7 +137,9 @@ export class BlogsService {
         readingTime: content !== undefined ? readingTime(content) : undefined,
         categoryId: dto.categoryId,
         tags: this.normaliseTags(dto.tags),
-        seo: dto.seo ? ({ ...((before.seo as object) ?? {}), ...dto.seo } as Prisma.InputJsonValue) : undefined,
+        seo: dto.seo
+          ? ({ ...((before.seo as object) ?? {}), ...dto.seo } as Prisma.InputJsonValue)
+          : undefined,
       },
       include: BLOG_INCLUDE,
     });

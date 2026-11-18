@@ -17,13 +17,27 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { ApiBearerAuth, ApiBody, ApiConsumes, ApiHeader, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiBody,
+  ApiConsumes,
+  ApiHeader,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Prisma, Site } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsString, Matches, MaxLength } from 'class-validator';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AppConfig } from '../../config/app-config.service';
-import { Audit, CurrentSite, CurrentUser, RequirePermission, SiteScoped } from '../../common/decorators';
+import {
+  Audit,
+  CurrentSite,
+  CurrentUser,
+  RequirePermission,
+  SiteScoped,
+} from '../../common/decorators';
 import { Permission } from '../../common/permissions';
 import { setAuditHints } from '../../common/context/request-context';
 import { paginate, PaginationQueryDto, skipTake } from '../../common/dto/pagination.dto';
@@ -66,7 +80,12 @@ export class MediaService {
   async list(siteId: string, q: PaginationQueryDto) {
     const db = this.prisma.forSite(siteId);
     const where: Prisma.MediaAssetWhereInput = q.search
-      ? { OR: [{ filename: { contains: q.search, mode: 'insensitive' } }, { alt: { contains: q.search, mode: 'insensitive' } }] }
+      ? {
+          OR: [
+            { filename: { contains: q.search, mode: 'insensitive' } },
+            { alt: { contains: q.search, mode: 'insensitive' } },
+          ],
+        }
       : {};
     const [rows, total] = await Promise.all([
       db.mediaAsset.findMany({
@@ -82,13 +101,17 @@ export class MediaService {
 
   async upload(siteId: string, file: IncomingFile | undefined, user: AuthUser) {
     if (this.storage.driver === 'url') {
-      throw new BadRequestException('File uploads are disabled in this environment. Add images by URL instead.');
+      throw new BadRequestException(
+        'File uploads are disabled in this environment. Add images by URL instead.',
+      );
     }
     if (!file) throw new BadRequestException('Choose an image to upload.');
     const max = this.config.get('MAX_UPLOAD_MB');
-    if (file.size > max * 1024 * 1024) throw new PayloadTooLargeException(`Images must be ${max} MB or smaller.`);
+    if (file.size > max * 1024 * 1024)
+      throw new PayloadTooLargeException(`Images must be ${max} MB or smaller.`);
     const mime = sniffImageType(file.buffer);
-    if (!mime) throw new UnsupportedMediaTypeException('Only JPEG, PNG, WebP and GIF images are allowed.');
+    if (!mime)
+      throw new UnsupportedMediaTypeException('Only JPEG, PNG, WebP and GIF images are allowed.');
     const stored = await this.storage.save(file, mime, siteId);
     return this.prisma.forSite(siteId).mediaAsset.create({
       data: {
@@ -105,7 +128,9 @@ export class MediaService {
   }
 
   addExternal(siteId: string, dto: ExternalMediaDto, user: AuthUser) {
-    const filename = decodeURIComponent(new URL(dto.url).pathname.split('/').pop() || 'image').slice(0, 150);
+    const filename = decodeURIComponent(
+      new URL(dto.url).pathname.split('/').pop() || 'image',
+    ).slice(0, 150);
     return this.prisma.forSite(siteId).mediaAsset.create({
       data: {
         siteId,
@@ -156,23 +181,37 @@ export class MediaController {
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('media.uploaded', 'media')
   @ApiConsumes('multipart/form-data')
-  @ApiBody({ schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } } })
+  @ApiBody({
+    schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
+  })
   @UseInterceptors(FileInterceptor('file', { limits: { fileSize: 20 * 1024 * 1024, files: 1 } }))
-  upload(@CurrentSite() site: Site, @UploadedFile() file: IncomingFile | undefined, @CurrentUser() user: AuthUser) {
+  upload(
+    @CurrentSite() site: Site,
+    @UploadedFile() file: IncomingFile | undefined,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.media.upload(site.id, file, user);
   }
 
   @Post('external')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('media.added', 'media')
-  addExternal(@CurrentSite() site: Site, @Body() dto: ExternalMediaDto, @CurrentUser() user: AuthUser) {
+  addExternal(
+    @CurrentSite() site: Site,
+    @Body() dto: ExternalMediaDto,
+    @CurrentUser() user: AuthUser,
+  ) {
     return this.media.addExternal(site.id, dto, user);
   }
 
   @Patch(':id')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('media.updated', 'media')
-  update(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateMediaDto) {
+  update(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateMediaDto,
+  ) {
     return this.media.update(site.id, id, dto.alt);
   }
 

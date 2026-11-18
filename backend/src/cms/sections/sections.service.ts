@@ -35,7 +35,9 @@ export class SectionsService {
 
   async list(siteId: string, pageId: string) {
     await this.page(siteId, pageId);
-    return this.prisma.forSite(siteId).section.findMany({ where: { pageId }, orderBy: { order: 'asc' } });
+    return this.prisma
+      .forSite(siteId)
+      .section.findMany({ where: { pageId }, orderBy: { order: 'asc' } });
   }
 
   async get(siteId: string, id: string) {
@@ -99,13 +101,19 @@ export class SectionsService {
 
   async reorder(siteId: string, pageId: string, ids: string[]) {
     await this.page(siteId, pageId);
-    const existing = await this.prisma.forSite(siteId).section.findMany({ where: { pageId }, select: { id: true } });
+    const existing = await this.prisma
+      .forSite(siteId)
+      .section.findMany({ where: { pageId }, select: { id: true } });
     const set = new Set(existing.map((s) => s.id));
     if (ids.length !== set.size || !ids.every((i) => set.has(i))) {
-      throw new BadRequestException('The new order must contain every section of this page exactly once.');
+      throw new BadRequestException(
+        'The new order must contain every section of this page exactly once.',
+      );
     }
     await this.prisma.$transaction(
-      ids.map((sid, index) => this.prisma.section.update({ where: { id: sid, siteId }, data: { order: index } })),
+      ids.map((sid, index) =>
+        this.prisma.section.update({ where: { id: sid, siteId }, data: { order: index } }),
+      ),
     );
     setAuditHints({ entityId: pageId, after: { order: ids } });
     return this.list(siteId, pageId);

@@ -13,7 +13,7 @@ import { AuditService } from '../audit/audit.service';
 import { PasswordService } from '../auth/password.service';
 import { TokenService } from '../auth/token.service';
 import { generateTempPassword } from '../common/utils/crypto';
-import { paginate, skipTake } from '../common/dto/pagination.dto';
+import { paginate, skipTake, sortField } from '../common/dto/pagination.dto';
 import { setAuditHints } from '../common/context/request-context';
 import { isDemoAccount } from '../meta/demo';
 import type { AuthUser } from '../common/types';
@@ -57,7 +57,14 @@ export class UsersService {
       this.prisma.user.findMany({
         where,
         include: USER_SITES_INCLUDE,
-        orderBy: [{ [q.sortBy]: { sort: q.sortOrder ?? (q.sortBy === 'name' || q.sortBy === 'email' ? 'asc' : 'desc'), nulls: 'last' } }, { id: 'asc' }],
+        orderBy: [
+          sortField(
+            q.sortBy,
+            q.sortOrder ?? (q.sortBy === 'name' || q.sortBy === 'email' ? 'asc' : 'desc'),
+            q.sortBy === 'lastLoginAt',
+          ),
+          { id: 'asc' },
+        ],
         ...skipTake(q),
       }),
       this.prisma.user.count({ where }),
@@ -80,13 +87,16 @@ export class UsersService {
     }
     const unique = [...new Set(siteIds)];
     const count = await this.prisma.site.count({ where: { id: { in: unique } } });
-    if (count !== unique.length) throw new BadRequestException('One or more websites do not exist.');
+    if (count !== unique.length)
+      throw new BadRequestException('One or more websites do not exist.');
     return unique;
   }
 
   private assertNotProtectedDemo(email: string) {
     if (this.config.get('DEMO_MODE') && isDemoAccount(email)) {
-      throw new ForbiddenException('Demo accounts are protected in the public demo. Create a new user to try this.');
+      throw new ForbiddenException(
+        'Demo accounts are protected in the public demo. Create a new user to try this.',
+      );
     }
   }
 
@@ -150,7 +160,11 @@ export class UsersService {
 
   private async superAdminCount(excludeId?: string) {
     return this.prisma.user.count({
-      where: { role: Role.SUPER_ADMIN, status: { not: UserStatus.INACTIVE }, id: { not: excludeId } },
+      where: {
+        role: Role.SUPER_ADMIN,
+        status: { not: UserStatus.INACTIVE },
+        id: { not: excludeId },
+      },
     });
   }
 
@@ -225,12 +239,20 @@ export class UsersService {
     const user = await this.get(id);
     if (user.id === actor.id) throw new ForbiddenException('You cannot change your own status.');
     this.assertNotProtectedDemo(user.email);
-    if (status === 'INACTIVE' && user.role === Role.SUPER_ADMIN && (await this.superAdminCount(user.id)) === 0) {
+    if (
+      status === 'INACTIVE' &&
+      user.role === Role.SUPER_ADMIN &&
+      (await this.superAdminCount(user.id)) === 0
+    ) {
       throw new ForbiddenException('You cannot deactivate the last Super Admin.');
     }
     // Re-activating a user who never finished first login returns them to "pending".
     const next =
-      status === 'ACTIVE' ? (user.mustChangePassword ? UserStatus.PENDING : UserStatus.ACTIVE) : UserStatus.INACTIVE;
+      status === 'ACTIVE'
+        ? user.mustChangePassword
+          ? UserStatus.PENDING
+          : UserStatus.ACTIVE
+        : UserStatus.INACTIVE;
     const updated = await this.prisma.user.update({
       where: { id },
       data: { status: next, ...(status === 'INACTIVE' ? { tokenVersion: { increment: 1 } } : {}) },

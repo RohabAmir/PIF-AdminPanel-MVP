@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma, Site } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { AuditService } from '../audit/audit.service';
@@ -59,7 +64,12 @@ export class SitesService {
   }
 
   async create(dto: CreateSiteDto, actor: AuthUser) {
-    const slug = dto.slug ?? (await uniqueSlug(dto.name, async (s) => !!(await this.prisma.site.findUnique({ where: { slug: s } }))));
+    const slug =
+      dto.slug ??
+      (await uniqueSlug(
+        dto.name,
+        async (s) => !!(await this.prisma.site.findUnique({ where: { slug: s } })),
+      ));
     if (dto.slug && (await this.prisma.site.findUnique({ where: { slug } }))) {
       throw new ConflictException({
         message: 'This slug is already used by another website.',
@@ -95,16 +105,27 @@ export class SitesService {
 
   async update(id: string, dto: UpdateSiteDto, actor: AuthUser) {
     const before = await this.get(id);
-    if (dto.slug && dto.slug !== before.slug && (await this.prisma.site.findUnique({ where: { slug: dto.slug } }))) {
+    if (
+      dto.slug &&
+      dto.slug !== before.slug &&
+      (await this.prisma.site.findUnique({ where: { slug: dto.slug } }))
+    ) {
       throw new ConflictException({
         message: 'This slug is already used by another website.',
         details: [{ field: 'slug', errors: ['This slug is already used by another website.'] }],
       });
     }
-    const site = await this.prisma.site.update({ where: { id }, data: { ...dto, slug: dto.slug ? slugify(dto.slug) : undefined } });
+    const site = await this.prisma.site.update({
+      where: { id },
+      data: { ...dto, slug: dto.slug ? slugify(dto.slug) : undefined },
+    });
     const statusChanged = dto.isActive !== undefined && dto.isActive !== before.isActive;
     await this.audit.log({
-      action: statusChanged ? (site.isActive ? 'site.activated' : 'site.deactivated') : 'site.updated',
+      action: statusChanged
+        ? site.isActive
+          ? 'site.activated'
+          : 'site.deactivated'
+        : 'site.updated',
       entityType: 'site',
       entityId: id,
       summary: `${actor.name} ${statusChanged ? (site.isActive ? 'activated' : 'deactivated') : 'updated'} website "${site.name}"`,
@@ -118,7 +139,10 @@ export class SitesService {
   async regenerateKey(id: string, actor: AuthUser) {
     const site = await this.get(id);
     const { key, hash, prefix } = generateApiKey();
-    await this.prisma.site.update({ where: { id }, data: { apiKeyHash: hash, apiKeyPrefix: prefix } });
+    await this.prisma.site.update({
+      where: { id },
+      data: { apiKeyHash: hash, apiKeyPrefix: prefix },
+    });
     await this.audit.log({
       action: 'site.api_key_regenerated',
       entityType: 'site',

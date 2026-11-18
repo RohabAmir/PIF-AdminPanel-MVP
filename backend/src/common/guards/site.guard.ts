@@ -34,7 +34,8 @@ export class SiteGuard implements CanActivate {
     const req = context.switchToHttp().getRequest<AuthedRequest>();
     const header = req.headers['x-site-id'];
     const siteId = Array.isArray(header) ? header[0] : header;
-    if (!siteId) throw new BadRequestException('Select a website first (X-Site-Id header missing).');
+    if (!siteId)
+      throw new BadRequestException('Select a website first (X-Site-Id header missing).');
     if (!UUID.test(siteId)) throw new BadRequestException('Invalid website id.');
 
     const isSuper = req.user.role === Role.SUPER_ADMIN;

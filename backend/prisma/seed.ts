@@ -6,7 +6,16 @@
 import { BlogStatus, Prisma, PrismaClient, Role, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'node:crypto';
-import { DAN, FORMS, IMAGES, LEAD_MESSAGES, LEAD_PEOPLE, LEAD_STATUS_POOL, SeedSite, TUAJA } from './seed-data';
+import {
+  DAN,
+  FORMS,
+  IMAGES,
+  LEAD_MESSAGES,
+  LEAD_PEOPLE,
+  LEAD_STATUS_POOL,
+  SeedSite,
+  TUAJA,
+} from './seed-data';
 
 const prisma = new PrismaClient();
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
@@ -16,10 +25,14 @@ const DEMO_PASSWORD = process.env.DEMO_PASSWORD ?? 'Demo@12345';
 
 // Deterministic PRNG so every fresh seed produces the same demo data.
 let state = 42;
-const rand = () => ((state = (state * 1664525 + 1013904223) % 4294967296) / 4294967296);
+const rand = () => (state = (state * 1664525 + 1013904223) % 4294967296) / 4294967296;
 const pickOne = <T>(arr: readonly T[]): T => arr[Math.floor(rand() * arr.length)];
 
-const slugify = (s: string) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const slugify = (s: string) =>
+  s
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
 
 async function upsertSite(s: SeedSite) {
   const apiKey = process.env[`SEED_${s.slug.split('-')[0].toUpperCase()}_API_KEY`] ?? s.apiKey;
@@ -35,7 +48,10 @@ async function upsertSite(s: SeedSite) {
       apiKeyHash: sha256(apiKey),
       apiKeyPrefix: apiKey.split('_').slice(0, 2).join('_'),
       seoSetting: {
-        create: { ...s.seo, robotsTxt: 'User-agent: *\nAllow: /\nSitemap: ' + s.seo.canonicalBaseUrl + '/sitemap.xml' },
+        create: {
+          ...s.seo,
+          robotsTxt: 'User-agent: *\nAllow: /\nSitemap: ' + s.seo.canonicalBaseUrl + '/sitemap.xml',
+        },
       },
     },
   });
@@ -75,8 +91,13 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
     categories.set(name, c.id);
   }
   for (const b of s.blogs) {
-    const html = b.paragraphs.map((p) => `<p>${p}</p>`).join('') + '<blockquote><p>Demo content — all names and places are fictional.</p></blockquote>';
-    const words = html.replace(/<[^>]+>/g, ' ').split(/\s+/).filter(Boolean).length;
+    const html =
+      b.paragraphs.map((p) => `<p>${p}</p>`).join('') +
+      '<blockquote><p>Demo content — all names and places are fictional.</p></blockquote>';
+    const words = html
+      .replace(/<[^>]+>/g, ' ')
+      .split(/\s+/)
+      .filter(Boolean).length;
     await prisma.blogPost.create({
       data: {
         siteId,
@@ -91,7 +112,10 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
         authorId: authors[b.author],
         status: b.status,
         publishedAt: b.status === BlogStatus.DRAFT ? null : new Date(Date.now() - b.daysAgo * DAY),
-        seo: { metaTitle: b.title.slice(0, 60), metaDescription: b.excerpt } as Prisma.InputJsonValue,
+        seo: {
+          metaTitle: b.title.slice(0, 60),
+          metaDescription: b.excerpt,
+        } as Prisma.InputJsonValue,
       },
     });
   }
@@ -120,11 +144,27 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
     const form = i % 3 === 0 ? forms[1] : forms[0];
     const email = `${handle}@${pickOne(domain)}`;
     const phone = `+971 5${Math.floor(rand() * 10)} ${String(Math.floor(rand() * 9_000_000) + 1_000_000)}`;
-    const createdAt = new Date(Date.now() - Math.floor(rand() * 29 * DAY) - Math.floor(rand() * 8 * 3_600_000));
+    const createdAt = new Date(
+      Date.now() - Math.floor(rand() * 29 * DAY) - Math.floor(rand() * 8 * 3_600_000),
+    );
     const data =
       form.key === 'contact'
-        ? { name, email, phone, topic: pickOne(['General', 'Bookings', 'Partnerships', 'Media']), message: pickOne(LEAD_MESSAGES), consent: true }
-        : { name, email, phone, guests: pickOne(['1', '2', '3-4', '5+']), interests: ['Hiking', 'Spa'].slice(0, 1 + Math.floor(rand() * 2)), notes: pickOne(LEAD_MESSAGES) };
+        ? {
+            name,
+            email,
+            phone,
+            topic: pickOne(['General', 'Bookings', 'Partnerships', 'Media']),
+            message: pickOne(LEAD_MESSAGES),
+            consent: true,
+          }
+        : {
+            name,
+            email,
+            phone,
+            guests: pickOne(['1', '2', '3-4', '5+']),
+            interests: ['Hiking', 'Spa'].slice(0, 1 + Math.floor(rand() * 2)),
+            notes: pickOne(LEAD_MESSAGES),
+          };
     const status = pickOne(LEAD_STATUS_POOL);
     await prisma.lead.create({
       data: {
@@ -136,12 +176,25 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
         email,
         phone,
         status,
-        sourcePage: form.key === 'contact' ? '/contact' : pickOne(['/eco-resorts', '/adventure-resorts', '/']),
+        sourcePage:
+          form.key === 'contact'
+            ? '/contact'
+            : pickOne(['/eco-resorts', '/adventure-resorts', '/']),
         createdAt,
         updatedAt: createdAt,
         notes:
           status !== 'NEW'
-            ? { create: [{ siteId, authorId: authors.editor, authorName: 'Lina Farouk', body: 'Called the guest — sent brochure and rates.', createdAt: new Date(createdAt.getTime() + DAY / 2) }] }
+            ? {
+                create: [
+                  {
+                    siteId,
+                    authorId: authors.editor,
+                    authorName: 'Lina Farouk',
+                    body: 'Called the guest — sent brochure and rates.',
+                    createdAt: new Date(createdAt.getTime() + DAY / 2),
+                  },
+                ],
+              }
             : undefined,
       },
     });
@@ -167,7 +220,10 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
   return true;
 }
 
-async function seedLogs(users: { id: string; name: string; email: string; role: Role }[], sites: { id: string; name: string }[]) {
+async function seedLogs(
+  users: { id: string; name: string; email: string; role: Role }[],
+  sites: { id: string; name: string }[],
+) {
   if ((await prisma.activityLog.count()) > 0) return;
   const [sa, admin, editor, viewer] = users;
   const templates: [typeof sa, string, string, string, boolean][] = [
@@ -177,19 +233,43 @@ async function seedLogs(users: { id: string; name: string; email: string; role: 
     [viewer, 'auth.login', 'user', '{a} signed in', false],
     [editor, 'page.updated', 'page', '{a} updated page "About Us"', true],
     [admin, 'page.published', 'page', '{a} published page "Eco Resorts"', true],
-    [editor, 'blog.created', 'blog', '{a} created blog "Five valley trails for every fitness level"', true],
-    [admin, 'blog.published', 'blog', '{a} published blog "Stargazing season opens this month"', true],
+    [
+      editor,
+      'blog.created',
+      'blog',
+      '{a} created blog "Five valley trails for every fitness level"',
+      true,
+    ],
+    [
+      admin,
+      'blog.published',
+      'blog',
+      '{a} published blog "Stargazing season opens this month"',
+      true,
+    ],
     [editor, 'section.reordered', 'section', '{a} reordered sections on "Home"', true],
     [editor, 'lead.status_changed', 'lead', '{a} moved a lead from New to Contacted', true],
     [admin, 'lead.exported', 'lead', 'Exported 24 leads to CSV', true],
     [admin, 'seo.updated', 'seo_settings', '{a} updated SEO settings', true],
     [admin, 'social.updated', 'social_link', '{a} updated social link "INSTAGRAM"', true],
     [sa, 'user.created', 'user', '{a} added Editor Hana Saleh (hana.saleh@pifdemo.com)', false],
-    [sa, 'user.role_changed', 'user', "{a} changed Khalid Nasser's role from Editor to Viewer", false],
+    [
+      sa,
+      'user.role_changed',
+      'user',
+      "{a} changed Khalid Nasser's role from Editor to Viewer",
+      false,
+    ],
     [sa, 'user.deactivated', 'user', '{a} deactivated Khalid Nasser', false],
     [editor, 'media.uploaded', 'media', '{a} uploaded media "lodge-suite.jpg"', true],
     [viewer, 'auth.logout', 'user', '{a} signed out', false],
-    [admin, 'auth.login_failed', 'user', 'Failed sign-in attempt for admin@pifdemo.com (1/5)', false],
+    [
+      admin,
+      'auth.login_failed',
+      'user',
+      'Failed sign-in attempt for admin@pifdemo.com (1/5)',
+      false,
+    ],
   ];
   const rows: Prisma.ActivityLogCreateManyInput[] = [];
   for (let i = 0; i < 56; i++) {
@@ -206,8 +286,14 @@ async function seedLogs(users: { id: string; name: string; email: string; role: 
       action,
       entityType,
       summary: summary.replace('{a}', actor.name),
-      before: action.endsWith('updated') || action.endsWith('status_changed') ? { status: 'DRAFT' } : undefined,
-      after: action.endsWith('updated') || action.endsWith('status_changed') ? { status: 'PUBLISHED' } : undefined,
+      before:
+        action.endsWith('updated') || action.endsWith('status_changed')
+          ? { status: 'DRAFT' }
+          : undefined,
+      after:
+        action.endsWith('updated') || action.endsWith('status_changed')
+          ? { status: 'PUBLISHED' }
+          : undefined,
       ip: '127.0.0.1',
       userAgent: 'Seed script',
       requestId: `seed-${i}`,
@@ -222,10 +308,34 @@ async function main() {
   const dan = await upsertSite(DAN);
 
   const demo = [
-    { email: 'superadmin@pifdemo.com', name: 'Sara Al-Mansour', role: Role.SUPER_ADMIN, sites: [], color: '#4A4A89' },
-    { email: 'admin@pifdemo.com', name: 'Omar Haddad', role: Role.ADMIN, sites: [tuaja.id, dan.id], color: '#7549AD' },
-    { email: 'editor@pifdemo.com', name: 'Lina Farouk', role: Role.EDITOR, sites: [tuaja.id], color: '#26BF94' },
-    { email: 'viewer@pifdemo.com', name: 'Yousef Karim', role: Role.VIEWER, sites: [dan.id], color: '#824703' },
+    {
+      email: 'superadmin@pifdemo.com',
+      name: 'Sara Al-Mansour',
+      role: Role.SUPER_ADMIN,
+      sites: [],
+      color: '#4A4A89',
+    },
+    {
+      email: 'admin@pifdemo.com',
+      name: 'Omar Haddad',
+      role: Role.ADMIN,
+      sites: [tuaja.id, dan.id],
+      color: '#7549AD',
+    },
+    {
+      email: 'editor@pifdemo.com',
+      name: 'Lina Farouk',
+      role: Role.EDITOR,
+      sites: [tuaja.id],
+      color: '#26BF94',
+    },
+    {
+      email: 'viewer@pifdemo.com',
+      name: 'Yousef Karim',
+      role: Role.VIEWER,
+      sites: [dan.id],
+      color: '#824703',
+    },
   ];
   const users = [];
   for (const u of demo) {
@@ -286,7 +396,9 @@ async function main() {
   await seedLogs(users, [tuaja, dan]);
 
   console.log('Seed complete.');
-  console.log(`  Content: Tuaja Demo ${seededT ? 'created' : 'already present'}, Dan Demo ${seededD ? 'created' : 'already present'}`);
+  console.log(
+    `  Content: Tuaja Demo ${seededT ? 'created' : 'already present'}, Dan Demo ${seededD ? 'created' : 'already present'}`,
+  );
   console.log(`  Demo logins (password ${DEMO_PASSWORD}): ${demo.map((d) => d.email).join(', ')}`);
   console.log(`  Public API keys: Tuaja Demo → ${TUAJA.apiKey} | Dan Demo → ${DAN.apiKey}`);
 }

@@ -4,8 +4,29 @@ import sanitizeHtml from 'sanitize-html';
 export function sanitizeRichText(html: string): string {
   return sanitizeHtml(html, {
     allowedTags: [
-      'h1', 'h2', 'h3', 'h4', 'p', 'br', 'hr', 'strong', 'b', 'em', 'i', 'u', 's', 'code', 'pre',
-      'blockquote', 'ul', 'ol', 'li', 'a', 'img', 'span', 'mark',
+      'h1',
+      'h2',
+      'h3',
+      'h4',
+      'p',
+      'br',
+      'hr',
+      'strong',
+      'b',
+      'em',
+      'i',
+      'u',
+      's',
+      'code',
+      'pre',
+      'blockquote',
+      'ul',
+      'ol',
+      'li',
+      'a',
+      'img',
+      'span',
+      'mark',
     ],
     allowedAttributes: {
       a: ['href', 'target', 'rel'],
@@ -20,7 +41,11 @@ export function sanitizeRichText(html: string): string {
     transformTags: {
       a: (tagName, attribs) => ({
         tagName,
-        attribs: { ...attribs, rel: 'noopener noreferrer', ...(attribs.target ? { target: '_blank' } : {}) },
+        attribs: {
+          ...attribs,
+          rel: 'noopener noreferrer',
+          ...(attribs.target ? { target: '_blank' } : {}),
+        },
       }),
     },
   });

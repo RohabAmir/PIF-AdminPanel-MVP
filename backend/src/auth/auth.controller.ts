@@ -15,7 +15,9 @@ import {
   VerifyOtpDto,
 } from './dto/auth.dto';
 
-const authLimit = { default: { limit: () => Number(process.env.AUTH_RATE_LIMIT ?? 10), ttl: 60_000 } };
+const authLimit = {
+  default: { limit: () => Number(process.env.AUTH_RATE_LIMIT ?? 10), ttl: 60_000 },
+};
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -118,7 +120,10 @@ export class AuthController {
     @Body() dto: ChangePasswordDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    return this.respond(res, await this.auth.changePassword(user, dto.currentPassword, dto.newPassword));
+    return this.respond(
+      res,
+      await this.auth.changePassword(user, dto.currentPassword, dto.newPassword),
+    );
   }
 
   @Get('me')

@@ -56,7 +56,12 @@ import { ActivityLogsModule } from './audit/activity-logs.module';
         },
       }),
     }),
-    ThrottlerModule.forRoot({ throttlers: [{ name: 'default', ttl: 60_000, limit: 300 }] }),
+    ThrottlerModule.forRootAsync({
+      inject: [AppConfig],
+      useFactory: (config: AppConfig) => ({
+        throttlers: [{ name: 'default', ttl: 60_000, limit: config.get('GLOBAL_RATE_LIMIT') }],
+      }),
+    }),
     PrismaModule,
     AuditModule,
     MailModule,

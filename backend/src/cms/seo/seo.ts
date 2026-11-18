@@ -1,5 +1,11 @@
 import { Body, Controller, Get, Injectable, Put } from '@nestjs/common';
-import { ApiBearerAuth, ApiHeader, ApiProperty, ApiPropertyOptional, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiHeader,
+  ApiProperty,
+  ApiPropertyOptional,
+  ApiTags,
+} from '@nestjs/swagger';
 import { Site } from '@prisma/client';
 import { Transform } from 'class-transformer';
 import { IsOptional, IsString, Length, Matches, MaxLength, ValidateIf } from 'class-validator';
@@ -10,7 +16,8 @@ import { setAuditHints } from '../../common/context/request-context';
 import { URL_OR_UPLOAD } from '../seo-fields.dto';
 
 const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? value.trim() : value);
-const emptyToNull = ({ value }: { value: unknown }) => (typeof value === 'string' && value.trim() === '' ? null : trim({ value }));
+const emptyToNull = ({ value }: { value: unknown }) =>
+  typeof value === 'string' && value.trim() === '' ? null : trim({ value });
 
 export class SeoSettingsDto {
   @ApiProperty({ example: '%s | Oasis Demo', description: '%s is replaced by the page title' })
@@ -42,14 +49,18 @@ export class SeoSettingsDto {
   @IsOptional()
   @Transform(emptyToNull)
   @ValidateIf((_o, v) => v !== null)
-  @Matches(/^https?:\/\/[^\s/]+(\/[^\s]*)?$/, { message: 'Canonical base URL must start with https://' })
+  @Matches(/^https?:\/\/[^\s/]+(\/[^\s]*)?$/, {
+    message: 'Canonical base URL must start with https://',
+  })
   canonicalBaseUrl?: string | null;
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
   @Transform(emptyToNull)
   @ValidateIf((_o, v) => v !== null)
-  @Matches(/^[A-Za-z0-9_-]{10,100}$/, { message: 'Paste only the content value of the Google verification meta tag.' })
+  @Matches(/^[A-Za-z0-9_-]{10,100}$/, {
+    message: 'Paste only the content value of the Google verification meta tag.',
+  })
   googleVerification?: string | null;
 }
 

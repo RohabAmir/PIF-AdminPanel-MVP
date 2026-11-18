@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { setAuditHints } from '../../common/context/request-context';
@@ -28,13 +33,20 @@ export class FormsService {
     const errors: { field: string; errors: string[] }[] = [];
     const seen = new Set<string>();
     fields.forEach((f, i) => {
-      if (seen.has(f.name)) errors.push({ field: `fields.${i}.name`, errors: [`Duplicate field key "${f.name}".`] });
+      if (seen.has(f.name))
+        errors.push({ field: `fields.${i}.name`, errors: [`Duplicate field key "${f.name}".`] });
       seen.add(f.name);
       if ((f.type === 'select' || f.type === 'radio') && !(f.options?.length ?? 0)) {
-        errors.push({ field: `fields.${i}.options`, errors: [`"${f.label}" needs at least one option.`] });
+        errors.push({
+          field: `fields.${i}.options`,
+          errors: [`"${f.label}" needs at least one option.`],
+        });
       }
       if (f.minLength && f.maxLength && f.minLength > f.maxLength) {
-        errors.push({ field: `fields.${i}.minLength`, errors: ['Minimum length cannot exceed maximum length.'] });
+        errors.push({
+          field: `fields.${i}.minLength`,
+          errors: ['Minimum length cannot exceed maximum length.'],
+        });
       }
       if (f.pattern) {
         try {
@@ -44,16 +56,24 @@ export class FormsService {
         }
       }
     });
-    if (errors.length) throw new BadRequestException({ message: 'Validation failed', details: errors });
-    return fields.map((f) => ({ ...f, options: f.options?.map((o) => o.trim()) })) as unknown as Prisma.InputJsonValue;
+    if (errors.length)
+      throw new BadRequestException({ message: 'Validation failed', details: errors });
+    return fields.map((f) => ({
+      ...f,
+      options: f.options?.map((o) => o.trim()),
+    })) as unknown as Prisma.InputJsonValue;
   }
 
   private async assertKeyFree(siteId: string, key: string, excludeId?: string) {
-    const clash = await this.prisma.forSite(siteId).form.findFirst({ where: { key, id: { not: excludeId } } });
+    const clash = await this.prisma
+      .forSite(siteId)
+      .form.findFirst({ where: { key, id: { not: excludeId } } });
     if (clash) {
       throw new ConflictException({
         message: 'Another form on this website already uses this key.',
-        details: [{ field: 'key', errors: ['Another form on this website already uses this key.'] }],
+        details: [
+          { field: 'key', errors: ['Another form on this website already uses this key.'] },
+        ],
       });
     }
   }

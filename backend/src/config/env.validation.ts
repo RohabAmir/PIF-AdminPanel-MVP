@@ -24,6 +24,8 @@ export const envValidationSchema = Joi.object({
   COOKIE_SECURE: Joi.boolean().default(false),
   COOKIE_SAMESITE: Joi.string().valid('lax', 'strict', 'none').default('lax'),
   AUTH_RATE_LIMIT: Joi.number().integer().min(1).default(10),
+  GLOBAL_RATE_LIMIT: Joi.number().integer().min(10).default(300),
+  PUBLIC_FORM_RATE_LIMIT: Joi.number().integer().min(1).default(10),
 
   SMTP_HOST: Joi.string().allow('').default(''),
   SMTP_PORT: Joi.number().port().default(1025),
@@ -61,6 +63,8 @@ export interface AppEnv {
   COOKIE_SECURE: boolean;
   COOKIE_SAMESITE: 'lax' | 'strict' | 'none';
   AUTH_RATE_LIMIT: number;
+  GLOBAL_RATE_LIMIT: number;
+  PUBLIC_FORM_RATE_LIMIT: number;
   SMTP_HOST: string;
   SMTP_PORT: number;
   SMTP_SECURE: boolean;

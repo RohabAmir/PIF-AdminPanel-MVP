@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { LeadStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { AuditService } from '../../audit/audit.service';
-import { paginate, skipTake } from '../../common/dto/pagination.dto';
+import { paginate, skipTake, sortField } from '../../common/dto/pagination.dto';
 import { setAuditHints } from '../../common/context/request-context';
 import { toCsv } from '../../common/utils/csv';
 import type { AuthUser } from '../../common/types';
@@ -30,7 +30,9 @@ export class LeadsService {
     return {
       ...(q.formId ? { formId: q.formId } : {}),
       ...(q.status ? { status: q.status } : {}),
-      ...(q.dateFrom || to ? { createdAt: { gte: q.dateFrom ? new Date(q.dateFrom) : undefined, lte: to } } : {}),
+      ...(q.dateFrom || to
+        ? { createdAt: { gte: q.dateFrom ? new Date(q.dateFrom) : undefined, lte: to } }
+        : {}),
       ...(q.search
         ? {
             OR: [
@@ -51,13 +53,23 @@ export class LeadsService {
       db.lead.findMany({
         where,
         include: { _count: { select: { notes: true } } },
-        orderBy: [{ [q.sortBy]: { sort: q.sortOrder ?? (q.sortBy === 'name' ? 'asc' : 'desc'), nulls: 'last' } }, { id: 'asc' }],
+        orderBy: [
+          sortField(
+            q.sortBy,
+            q.sortOrder ?? (q.sortBy === 'name' ? 'asc' : 'desc'),
+            q.sortBy === 'name',
+          ),
+          { id: 'asc' },
+        ],
         ...skipTake(q),
       }),
       db.lead.count({ where }),
       db.lead.groupBy({ by: ['status'], _count: { _all: true }, orderBy: { status: 'asc' } }),
     ]);
-    const counts = Object.fromEntries(Object.keys(STATUS_LABEL).map((s) => [s, 0])) as Record<LeadStatus, number>;
+    const counts = Object.fromEntries(Object.keys(STATUS_LABEL).map((s) => [s, 0])) as Record<
+      LeadStatus,
+      number
+    >;
     for (const g of grouped) counts[g.status] = (g._count as { _all: number })._all;
     return { ...paginate(rows, total, q), counts };
   }
@@ -104,18 +116,42 @@ export class LeadsService {
     return { id, name: before.name ?? before.email ?? 'lead' };
   }
 
-  async exportCsv(siteId: string, siteName: string, q: LeadFiltersDto): Promise<{ csv: string; count: number }> {
+  async exportCsv(
+    siteId: string,
+    siteName: string,
+    q: LeadFiltersDto,
+  ): Promise<{ csv: string; count: number }> {
     const rows = await this.prisma.forSite(siteId).lead.findMany({
       where: this.where(q),
       orderBy: { createdAt: 'desc' },
       take: 10_000,
     });
-    const dataKeys = [...new Set(rows.flatMap((r) => Object.keys((r.data as Record<string, unknown>) ?? {})))];
+    const dataKeys = [
+      ...new Set(rows.flatMap((r) => Object.keys((r.data as Record<string, unknown>) ?? {}))),
+    ];
     const csv = toCsv(
-      ['Submitted at (UTC)', 'Form', 'Status', 'Name', 'Email', 'Phone', 'Source page', ...dataKeys],
+      [
+        'Submitted at (UTC)',
+        'Form',
+        'Status',
+        'Name',
+        'Email',
+        'Phone',
+        'Source page',
+        ...dataKeys,
+      ],
       rows.map((r) => {
         const d = (r.data as Record<string, unknown>) ?? {};
-        return [r.createdAt, r.formName, STATUS_LABEL[r.status], r.name, r.email, r.phone, r.sourcePage, ...dataKeys.map((k) => d[k])];
+        return [
+          r.createdAt,
+          r.formName,
+          STATUS_LABEL[r.status],
+          r.name,
+          r.email,
+          r.phone,
+          r.sourcePage,
+          ...dataKeys.map((k) => d[k]),
+        ];
       }),
     );
     await this.audit.log({

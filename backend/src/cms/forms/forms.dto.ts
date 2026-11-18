@@ -24,7 +24,10 @@ const trim = ({ value }: { value: unknown }) => (typeof value === 'string' ? val
 
 export class FormFieldDto {
   @ApiProperty({ example: 'email' })
-  @Matches(/^[a-z][a-z0-9_]{0,39}$/, { message: 'Field key must start with a letter and use lower-case letters, numbers or underscores.' })
+  @Matches(/^[a-z][a-z0-9_]{0,39}$/, {
+    message:
+      'Field key must start with a letter and use lower-case letters, numbers or underscores.',
+  })
   name: string;
 
   @ApiProperty({ example: 'Email address' })
@@ -85,7 +88,9 @@ export class CreateFormDto {
 
   @ApiProperty({ example: 'contact' })
   @Transform(trim)
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: 'Form key may only contain lower-case letters, numbers and dashes.' })
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'Form key may only contain lower-case letters, numbers and dashes.',
+  })
   @MaxLength(60)
   key: string;
 
@@ -113,7 +118,9 @@ export class CreateFormDto {
 
   @ApiPropertyOptional({ nullable: true })
   @IsOptional()
-  @Transform(({ value }) => (value === '' ? null : typeof value === 'string' ? value.trim().toLowerCase() : value))
+  @Transform(({ value }) =>
+    value === '' ? null : typeof value === 'string' ? value.trim().toLowerCase() : value,
+  )
   @ValidateIf((_o, v) => v !== null)
   @IsEmail({}, { message: 'Notification email must be a valid email address.' })
   notificationEmail?: string | null;
@@ -135,7 +142,9 @@ export class UpdateFormDto extends CreateFormDto {
   @ApiPropertyOptional()
   @IsOptional()
   @Transform(trim)
-  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, { message: 'Form key may only contain lower-case letters, numbers and dashes.' })
+  @Matches(/^[a-z0-9]+(?:-[a-z0-9]+)*$/, {
+    message: 'Form key may only contain lower-case letters, numbers and dashes.',
+  })
   @MaxLength(60)
   declare key: string;
 

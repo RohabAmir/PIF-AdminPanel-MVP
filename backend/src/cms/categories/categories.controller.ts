@@ -1,4 +1,16 @@
-import { Body, ConflictException, Controller, Delete, Get, Injectable, NotFoundException, Param, ParseUUIDPipe, Patch, Post } from '@nestjs/common';
+import {
+  Body,
+  ConflictException,
+  Controller,
+  Delete,
+  Get,
+  Injectable,
+  NotFoundException,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Site } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
@@ -20,7 +32,9 @@ export class CategoriesService {
   }
 
   private async assertFree(siteId: string, slug: string, excludeId?: string) {
-    const clash = await this.prisma.forSite(siteId).blogCategory.findFirst({ where: { slug, id: { not: excludeId } } });
+    const clash = await this.prisma
+      .forSite(siteId)
+      .blogCategory.findFirst({ where: { slug, id: { not: excludeId } } });
     if (clash) {
       throw new ConflictException({
         message: 'A category with this name already exists.',
@@ -81,7 +95,11 @@ export class CategoriesController {
   @Patch(':id')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('category.updated', 'category')
-  update(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @Body() dto: CategoryDto) {
+  update(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: CategoryDto,
+  ) {
     return this.categories.update(site.id, id, dto.name);
   }
 

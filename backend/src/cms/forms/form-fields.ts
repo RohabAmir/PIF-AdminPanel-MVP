@@ -1,4 +1,12 @@
-export const FIELD_TYPES = ['text', 'email', 'phone', 'textarea', 'select', 'checkbox', 'radio'] as const;
+export const FIELD_TYPES = [
+  'text',
+  'email',
+  'phone',
+  'textarea',
+  'select',
+  'checkbox',
+  'radio',
+] as const;
 export type FieldType = (typeof FIELD_TYPES)[number];
 
 export interface FormField {
@@ -20,7 +28,10 @@ const PHONE = /^\+?[0-9 ()-]{7,20}$/;
 export function validateSubmission(
   fields: FormField[],
   input: Record<string, unknown>,
-): { values: Record<string, string | string[] | boolean>; errors: { field: string; errors: string[] }[] } {
+): {
+  values: Record<string, string | string[] | boolean>;
+  errors: { field: string; errors: string[] }[];
+} {
   const values: Record<string, string | string[] | boolean> = {};
   const errors: { field: string; errors: string[] }[] = [];
   const fail = (f: FormField, msg: string) => errors.push({ field: f.name, errors: [msg] });
@@ -29,7 +40,9 @@ export function validateSubmission(
     const raw = input[f.name];
     if (f.type === 'checkbox') {
       if (f.options?.length) {
-        const arr = (Array.isArray(raw) ? raw : raw === undefined || raw === '' ? [] : [raw]).map(String);
+        const arr = (Array.isArray(raw) ? raw : raw === undefined || raw === '' ? [] : [raw]).map(
+          String,
+        );
         const invalid = arr.filter((v) => !f.options!.includes(v));
         if (invalid.length) fail(f, `${f.label} contains an invalid choice.`);
         else if (f.required && arr.length === 0) fail(f, `${f.label} is required.`);
@@ -41,7 +54,12 @@ export function validateSubmission(
       }
       continue;
     }
-    const value = typeof raw === 'string' ? raw.trim() : raw === undefined || raw === null ? '' : String(raw).trim();
+    const value =
+      typeof raw === 'string'
+        ? raw.trim()
+        : raw === undefined || raw === null
+          ? ''
+          : String(raw).trim();
     if (!value) {
       if (f.required) fail(f, `${f.label} is required.`);
       else values[f.name] = '';
@@ -91,7 +109,9 @@ export function extractContact(fields: FormField[], values: Record<string, unkno
   const first = named('first_name', 'firstname');
   const last = named('last_name', 'lastname');
   return {
-    name: named('name', 'full_name', 'fullname') ?? ([first, last].filter(Boolean).join(' ') || undefined),
+    name:
+      named('name', 'full_name', 'fullname') ??
+      ([first, last].filter(Boolean).join(' ') || undefined),
     email: byType('email'),
     phone: byType('phone'),
   };

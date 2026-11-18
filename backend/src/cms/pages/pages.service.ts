@@ -1,4 +1,9 @@
-import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { PageStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 import { paginate, skipTake } from '../../common/dto/pagination.dto';
@@ -30,7 +35,8 @@ export class PagesService {
           }
         : {}),
     };
-    const sortOrder = q.sortOrder ?? (q.sortBy === 'order' || q.sortBy === 'title' ? 'asc' : 'desc');
+    const sortOrder =
+      q.sortOrder ?? (q.sortBy === 'order' || q.sortBy === 'title' ? 'asc' : 'desc');
     const [rows, total] = await Promise.all([
       db.page.findMany({
         where,
@@ -44,14 +50,18 @@ export class PagesService {
   }
 
   async get(siteId: string, id: string) {
-    const page = await this.prisma.forSite(siteId).page.findUnique({ where: { id }, include: PAGE_INCLUDE });
+    const page = await this.prisma
+      .forSite(siteId)
+      .page.findUnique({ where: { id }, include: PAGE_INCLUDE });
     if (!page) throw new NotFoundException('Page not found.');
     return page;
   }
 
   private slugTaken(siteId: string, excludeId?: string) {
     return async (slug: string) =>
-      !!(await this.prisma.forSite(siteId).page.findFirst({ where: { slug, id: { not: excludeId } }, select: { id: true } }));
+      !!(await this.prisma
+        .forSite(siteId)
+        .page.findFirst({ where: { slug, id: { not: excludeId } }, select: { id: true } }));
   }
 
   private async assertParent(siteId: string, parentId: string | null | undefined, selfId?: string) {
@@ -92,14 +102,17 @@ export class PagesService {
   private slugConflict() {
     return new ConflictException({
       message: 'Another page on this website already uses this slug.',
-      details: [{ field: 'slug', errors: ['Another page on this website already uses this slug.'] }],
+      details: [
+        { field: 'slug', errors: ['Another page on this website already uses this slug.'] },
+      ],
     });
   }
 
   async update(siteId: string, id: string, dto: UpdatePageDto) {
     const before = await this.get(siteId, id);
     setAuditHints({ before });
-    if (dto.slug && dto.slug !== before.slug && (await this.slugTaken(siteId, id)(dto.slug))) throw this.slugConflict();
+    if (dto.slug && dto.slug !== before.slug && (await this.slugTaken(siteId, id)(dto.slug)))
+      throw this.slugConflict();
     if (dto.parentId !== undefined) await this.assertParent(siteId, dto.parentId, id);
     return this.prisma.forSite(siteId).page.update({
       where: { id },
@@ -108,7 +121,9 @@ export class PagesService {
         slug: dto.slug,
         parentId: dto.parentId,
         order: dto.order,
-        seo: dto.seo ? ({ ...((before.seo as object) ?? {}), ...dto.seo } as Prisma.InputJsonValue) : undefined,
+        seo: dto.seo
+          ? ({ ...((before.seo as object) ?? {}), ...dto.seo } as Prisma.InputJsonValue)
+          : undefined,
       },
       include: PAGE_INCLUDE,
     });
@@ -122,7 +137,8 @@ export class PagesService {
       where: { id },
       data: {
         status,
-        publishedAt: status === PageStatus.PUBLISHED ? (before.publishedAt ?? new Date()) : before.publishedAt,
+        publishedAt:
+          status === PageStatus.PUBLISHED ? (before.publishedAt ?? new Date()) : before.publishedAt,
       },
       include: PAGE_INCLUDE,
     });
@@ -130,7 +146,10 @@ export class PagesService {
 
   async duplicate(siteId: string, id: string, user: AuthUser) {
     const db = this.prisma.forSite(siteId);
-    const source = await db.page.findUnique({ where: { id }, include: { sections: { orderBy: { order: 'asc' } } } });
+    const source = await db.page.findUnique({
+      where: { id },
+      include: { sections: { orderBy: { order: 'asc' } } },
+    });
     if (!source) throw new NotFoundException('Page not found.');
     const slug = await uniqueSlug(`${source.slug}-copy`, this.slugTaken(siteId));
     const max = await db.page.aggregate({ _max: { order: true } });
@@ -169,9 +188,12 @@ export class PagesService {
   async reorder(siteId: string, ids: string[]) {
     const db = this.prisma.forSite(siteId);
     const count = await db.page.count({ where: { id: { in: ids } } });
-    if (count !== new Set(ids).size) throw new BadRequestException('Some pages do not belong to this website.');
+    if (count !== new Set(ids).size)
+      throw new BadRequestException('Some pages do not belong to this website.');
     await this.prisma.$transaction(
-      ids.map((pid, index) => this.prisma.page.update({ where: { id: pid, siteId }, data: { order: index } })),
+      ids.map((pid, index) =>
+        this.prisma.page.update({ where: { id: pid, siteId }, data: { order: index } }),
+      ),
     );
     return { ids };
   }

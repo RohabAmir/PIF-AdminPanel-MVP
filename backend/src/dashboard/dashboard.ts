@@ -9,7 +9,9 @@ import { Permission } from '../common/permissions';
 import type { AuthUser } from '../common/types';
 
 export class StatsQueryDto {
-  @ApiPropertyOptional({ description: 'Browser timezone offset in minutes (Date#getTimezoneOffset)' })
+  @ApiPropertyOptional({
+    description: 'Browser timezone offset in minutes (Date#getTimezoneOffset)',
+  })
   @IsOptional()
   @Type(() => Number)
   @IsInt()
@@ -29,9 +31,17 @@ export class DashboardService {
     const now = new Date();
     // Day buckets are computed in the viewer's local time.
     const localNow = new Date(now.getTime() - tzOffset * 60_000);
-    const monthStart = new Date(Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), 1) + tzOffset * 60_000);
-    const lastMonthStart = new Date(Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth() - 1, 1) + tzOffset * 60_000);
-    const todayStartLocal = Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), localNow.getUTCDate());
+    const monthStart = new Date(
+      Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth(), 1) + tzOffset * 60_000,
+    );
+    const lastMonthStart = new Date(
+      Date.UTC(localNow.getUTCFullYear(), localNow.getUTCMonth() - 1, 1) + tzOffset * 60_000,
+    );
+    const todayStartLocal = Date.UTC(
+      localNow.getUTCFullYear(),
+      localNow.getUTCMonth(),
+      localNow.getUTCDate(),
+    );
     const rangeStart = new Date(todayStartLocal - 29 * DAY + tzOffset * 60_000);
     const isSuper = user.role === Role.SUPER_ADMIN;
 
@@ -51,7 +61,12 @@ export class DashboardService {
     ] = await Promise.all([
       db.page.count({ where: { status: PageStatus.PUBLISHED } }),
       db.page.count(),
-      db.blogPost.count({ where: { status: { in: [BlogStatus.PUBLISHED, BlogStatus.SCHEDULED] }, publishedAt: { lte: now } } }),
+      db.blogPost.count({
+        where: {
+          status: { in: [BlogStatus.PUBLISHED, BlogStatus.SCHEDULED] },
+          publishedAt: { lte: now },
+        },
+      }),
       db.blogPost.count(),
       db.lead.count({ where: { createdAt: { gte: monthStart } } }),
       db.lead.count({ where: { createdAt: { gte: lastMonthStart, lt: monthStart } } }),
@@ -65,7 +80,14 @@ export class DashboardService {
       db.lead.findMany({
         orderBy: { createdAt: 'desc' },
         take: 6,
-        select: { id: true, name: true, email: true, formName: true, status: true, createdAt: true },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          formName: true,
+          status: true,
+          createdAt: true,
+        },
       }),
       db.lead.findMany({ where: { createdAt: { gte: rangeStart } }, select: { createdAt: true } }),
       db.lead.groupBy({ by: ['status'], _count: { _all: true }, orderBy: { status: 'asc' } }),
@@ -73,7 +95,15 @@ export class DashboardService {
         where: isSuper ? { OR: [{ siteId: site.id }, { siteId: null }] } : { actorId: user.id },
         orderBy: { createdAt: 'desc' },
         take: 8,
-        select: { id: true, action: true, summary: true, actorName: true, actorRole: true, siteName: true, createdAt: true },
+        select: {
+          id: true,
+          action: true,
+          summary: true,
+          actorName: true,
+          actorRole: true,
+          siteName: true,
+          createdAt: true,
+        },
       }),
     ]);
 
@@ -87,12 +117,23 @@ export class DashboardService {
     }
     const statusCounts = Object.values(LeadStatus).map((status) => ({
       status,
-      count: (byStatus.find((b) => b.status === status)?._count as { _all: number } | undefined)?._all ?? 0,
+      count:
+        (byStatus.find((b) => b.status === status)?._count as { _all: number } | undefined)?._all ??
+        0,
     }));
 
     return {
       site: { id: site.id, name: site.name, primaryColor: site.primaryColor },
-      kpis: { publishedPages, totalPages, publishedPosts, totalPosts, leadsThisMonth, leadsLastMonth, totalLeads, activeUsers },
+      kpis: {
+        publishedPages,
+        totalPages,
+        publishedPosts,
+        totalPosts,
+        leadsThisMonth,
+        leadsLastMonth,
+        totalLeads,
+        activeUsers,
+      },
       leadsOverTime: [...buckets.entries()].map(([date, count]) => ({ date, count })),
       leadsByStatus: statusCounts,
       recentLeads: recentLeadRows,
@@ -120,13 +161,18 @@ export class DashboardService {
       _count: { _all: true },
       orderBy: { siteId: 'asc' },
     });
-    const [totalUsers, totalSites] = await Promise.all([this.prisma.user.count(), this.prisma.site.count()]);
+    const [totalUsers, totalSites] = await Promise.all([
+      this.prisma.user.count(),
+      this.prisma.site.count(),
+    ]);
     return {
       totalSites,
       totalUsers,
       sites: sites.map((s) => ({
         ...s,
-        leads30d: (recent.find((r) => r.siteId === s.id)?._count as { _all: number } | undefined)?._all ?? 0,
+        leads30d:
+          (recent.find((r) => r.siteId === s.id)?._count as { _all: number } | undefined)?._all ??
+          0,
       })),
     };
   }

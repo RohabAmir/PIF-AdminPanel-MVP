@@ -48,7 +48,8 @@ export function validatePlatformUrl(platform: SocialPlatform, raw: string): stri
   if (!allowed.some((h) => host === h || host.endsWith(`.${h}`))) {
     return `This doesn't look like a ${platform.charAt(0) + platform.slice(1).toLowerCase()} URL (expected ${allowed.join(' or ')}).`;
   }
-  if (url.pathname.length <= 1 && platform !== 'WHATSAPP') return 'Include the profile or page path in the URL.';
+  if (url.pathname.length <= 1 && platform !== 'WHATSAPP')
+    return 'Include the profile or page path in the URL.';
   return null;
 }
 
@@ -93,7 +94,8 @@ export class SocialService {
 
   private assertUrl(platform: SocialPlatform, url: string) {
     const err = validatePlatformUrl(platform, url);
-    if (err) throw new BadRequestException({ message: err, details: [{ field: 'url', errors: [err] }] });
+    if (err)
+      throw new BadRequestException({ message: err, details: [{ field: 'url', errors: [err] }] });
   }
 
   async create(siteId: string, dto: SocialLinkDto) {
@@ -107,7 +109,13 @@ export class SocialService {
     }
     const max = await db.socialLink.aggregate({ _max: { order: true } });
     return db.socialLink.create({
-      data: { siteId, platform: dto.platform, url: dto.url, isActive: dto.isActive ?? true, order: (max._max.order ?? -1) + 1 },
+      data: {
+        siteId,
+        platform: dto.platform,
+        url: dto.url,
+        isActive: dto.isActive ?? true,
+        order: (max._max.order ?? -1) + 1,
+      },
     });
   }
 
@@ -121,10 +129,15 @@ export class SocialService {
   }
 
   async reorder(siteId: string, ids: string[]) {
-    const count = await this.prisma.forSite(siteId).socialLink.count({ where: { id: { in: ids } } });
-    if (count !== new Set(ids).size) throw new BadRequestException('Some links do not belong to this website.');
+    const count = await this.prisma
+      .forSite(siteId)
+      .socialLink.count({ where: { id: { in: ids } } });
+    if (count !== new Set(ids).size)
+      throw new BadRequestException('Some links do not belong to this website.');
     await this.prisma.$transaction(
-      ids.map((lid, order) => this.prisma.socialLink.update({ where: { id: lid, siteId }, data: { order } })),
+      ids.map((lid, order) =>
+        this.prisma.socialLink.update({ where: { id: lid, siteId }, data: { order } }),
+      ),
     );
     return this.list(siteId);
   }
@@ -170,7 +183,11 @@ export class SocialController {
   @Patch(':id')
   @RequirePermission(Permission.SETTINGS_MANAGE)
   @Audit('social.updated', 'social_link')
-  update(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateSocialLinkDto) {
+  update(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSocialLinkDto,
+  ) {
     return this.social.update(site.id, id, dto);
   }
 

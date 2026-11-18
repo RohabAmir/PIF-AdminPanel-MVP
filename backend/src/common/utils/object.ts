@@ -1,4 +1,5 @@
-const SENSITIVE = /^(password|passwordHash|token|tokenHash|codeHash|apiKey|apiKeyHash|secret|otp|code|refreshToken|accessToken|tempPassword)$/i;
+const SENSITIVE =
+  /^(password|passwordHash|token|tokenHash|codeHash|apiKey|apiKeyHash|secret|otp|code|refreshToken|accessToken|tempPassword)$/i;
 const MAX_STRING = 500;
 
 /** Deep-copies a value into plain JSON, stripping secrets and truncating long strings. */
@@ -7,7 +8,9 @@ export function sanitizeForLog(value: unknown, depth = 0): unknown {
   if (depth > 5) return '[…]';
   if (value instanceof Date) return value.toISOString();
   if (typeof value === 'string') {
-    return value.length > MAX_STRING ? `${value.slice(0, MAX_STRING)}… (${value.length} chars)` : value;
+    return value.length > MAX_STRING
+      ? `${value.slice(0, MAX_STRING)}… (${value.length} chars)`
+      : value;
   }
   if (typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.slice(0, 50).map((v) => sanitizeForLog(v, depth + 1));
@@ -19,7 +22,7 @@ export function sanitizeForLog(value: unknown, depth = 0): unknown {
   return out;
 }
 
-const IGNORED_DIFF_KEYS = new Set(['updatedAt', 'createdAt']);
+const IGNORED_DIFF_KEYS = new Set(['id', 'siteId', 'updatedAt', 'createdAt']);
 
 /** Returns only the top-level keys that changed between two objects. */
 export function diffObjects(

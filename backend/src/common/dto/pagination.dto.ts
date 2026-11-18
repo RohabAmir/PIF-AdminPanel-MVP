@@ -52,3 +52,8 @@ export const skipTake = (q: PaginationQueryDto) => ({
   skip: (q.page - 1) * q.pageSize,
   take: q.pageSize,
 });
+
+/** Builds an orderBy clause; `nulls: 'last'` is only valid on nullable columns. */
+export function sortField(field: string, sort: 'asc' | 'desc', nullable = false) {
+  return { [field]: nullable ? { sort, nulls: 'last' as const } : sort };
+}

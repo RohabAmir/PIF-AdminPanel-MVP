@@ -1,4 +1,14 @@
-import { Body, Controller, Delete, Get, Param, ParseUUIDPipe, Patch, Post, Put } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Put,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Site } from '@prisma/client';
 import { Audit, CurrentSite, RequirePermission, SiteScoped } from '../../common/decorators';
@@ -24,14 +34,22 @@ export class SectionsController {
   @Post('pages/:pageId/sections')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('section.created', 'section')
-  create(@CurrentSite() site: Site, @Param('pageId', ParseUUIDPipe) pageId: string, @Body() dto: CreateSectionDto) {
+  create(
+    @CurrentSite() site: Site,
+    @Param('pageId', ParseUUIDPipe) pageId: string,
+    @Body() dto: CreateSectionDto,
+  ) {
     return this.sections.create(site.id, pageId, dto);
   }
 
   @Put('pages/:pageId/sections/order')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('section.reordered', 'section')
-  reorder(@CurrentSite() site: Site, @Param('pageId', ParseUUIDPipe) pageId: string, @Body() dto: ReorderDto) {
+  reorder(
+    @CurrentSite() site: Site,
+    @Param('pageId', ParseUUIDPipe) pageId: string,
+    @Body() dto: ReorderDto,
+  ) {
     return this.sections.reorder(site.id, pageId, dto.ids);
   }
 
@@ -43,7 +61,11 @@ export class SectionsController {
   @Patch('sections/:id')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('section.updated', 'section')
-  update(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateSectionDto) {
+  update(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateSectionDto,
+  ) {
     return this.sections.update(site.id, id, dto);
   }
 

@@ -1,7 +1,25 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseUUIDPipe, Patch, Post, Query } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiTags } from '@nestjs/swagger';
 import { Site } from '@prisma/client';
-import { Audit, CurrentSite, CurrentUser, RequirePermission, SiteScoped } from '../../common/decorators';
+import {
+  Audit,
+  CurrentSite,
+  CurrentUser,
+  RequirePermission,
+  SiteScoped,
+} from '../../common/decorators';
 import { Permission } from '../../common/permissions';
 import type { AuthUser } from '../../common/types';
 import { BlogsService } from './blogs.service';
@@ -36,7 +54,11 @@ export class BlogsController {
   @Patch(':id')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('blog.updated', 'blog')
-  update(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateBlogDto) {
+  update(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateBlogDto,
+  ) {
     return this.blogs.update(site.id, id, dto);
   }
 
@@ -44,7 +66,11 @@ export class BlogsController {
   @HttpCode(HttpStatus.OK)
   @RequirePermission(Permission.CONTENT_PUBLISH)
   @Audit('blog.published', 'blog')
-  publish(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @Body() dto: PublishBlogDto) {
+  publish(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: PublishBlogDto,
+  ) {
     return this.blogs.publish(site.id, id, dto.publishedAt);
   }
 

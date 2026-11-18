@@ -115,11 +115,18 @@ export class AuthService {
     }
 
     if (user.status === UserStatus.INACTIVE) {
-      throw new ForbiddenException('Your account has been deactivated. Please contact an administrator.');
+      throw new ForbiddenException(
+        'Your account has been deactivated. Please contact an administrator.',
+      );
     }
-    if (user.mustChangePassword && user.tempPasswordExpiresAt && user.tempPasswordExpiresAt < new Date()) {
+    if (
+      user.mustChangePassword &&
+      user.tempPasswordExpiresAt &&
+      user.tempPasswordExpiresAt < new Date()
+    ) {
       throw new UnauthorizedException({
-        message: 'Your temporary password has expired. Ask an administrator to resend your welcome email.',
+        message:
+          'Your temporary password has expired. Ask an administrator to resend your welcome email.',
         details: { code: 'TEMP_PASSWORD_EXPIRED' },
       });
     }
@@ -157,7 +164,9 @@ export class AuthService {
       include: USER_SITES_INCLUDE,
     });
     if (user.status === UserStatus.INACTIVE) {
-      throw new ForbiddenException('Your account has been deactivated. Please contact an administrator.');
+      throw new ForbiddenException(
+        'Your account has been deactivated. Please contact an administrator.',
+      );
     }
     const actor = actorOf(user);
     await this.audit.log({
@@ -187,7 +196,9 @@ export class AuthService {
     const sent = await this.sendOtp(user, code);
     const demo = this.demoOtp(user.email, code);
     if (!sent && !demo.demoOtp) {
-      throw new ServiceUnavailableException('We could not send a new code. Please try again shortly.');
+      throw new ServiceUnavailableException(
+        'We could not send a new code. Please try again shortly.',
+      );
     }
     return {
       resendCooldownSeconds: OTP_RESEND_COOLDOWN_MS / 1000,
@@ -230,7 +241,10 @@ export class AuthService {
 
   async logoutAll(user: AuthUser): Promise<void> {
     await this.tokens.revokeAllForUser(user.id, 'logout_all');
-    await this.prisma.user.update({ where: { id: user.id }, data: { tokenVersion: { increment: 1 } } });
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { tokenVersion: { increment: 1 } },
+    });
     await this.audit.log({
       action: 'auth.logout_all',
       entityType: 'user',
@@ -242,7 +256,8 @@ export class AuthService {
 
   async forgotPassword(email: string) {
     this.limiter.consume('forgot', email);
-    const message = 'If an account exists for this email, you will receive a password reset link shortly.';
+    const message =
+      'If an account exists for this email, you will receive a password reset link shortly.';
     const user = await this.prisma.user.findUnique({ where: { email } });
     if (!user || user.status === UserStatus.INACTIVE) return { message };
 
@@ -252,7 +267,11 @@ export class AuthService {
     });
     const raw = randomToken(32);
     await this.prisma.passwordResetToken.create({
-      data: { userId: user.id, tokenHash: sha256(raw), expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS) },
+      data: {
+        userId: user.id,
+        tokenHash: sha256(raw),
+        expiresAt: new Date(Date.now() + RESET_TOKEN_TTL_MS),
+      },
     });
     const resetUrl = `${this.config.get('FRONTEND_URL')}/reset-password?token=${encodeURIComponent(raw)}`;
     await this.mail.send(user.email, 'Reset your PIF Admin Panel password', 'reset-password', {
@@ -273,7 +292,9 @@ export class AuthService {
 
   private assertNotProtectedDemo(email: string): void {
     if (this.config.get('DEMO_MODE') && isDemoAccount(email)) {
-      throw new ForbiddenException('Demo accounts are protected in the public demo. Try this with a user you create.');
+      throw new ForbiddenException(
+        'Demo accounts are protected in the public demo. Try this with a user you create.',
+      );
     }
   }
 
@@ -290,7 +311,9 @@ export class AuthService {
     if (token.user.status === UserStatus.INACTIVE) throw invalid;
     this.assertNotProtectedDemo(token.user.email);
     if (await this.passwords.verify(password, token.user.passwordHash)) {
-      throw new BadRequestException('Your new password must be different from your current password.');
+      throw new BadRequestException(
+        'Your new password must be different from your current password.',
+      );
     }
     const claimed = await this.prisma.passwordResetToken.updateMany({
       where: { id: token.id, usedAt: null },

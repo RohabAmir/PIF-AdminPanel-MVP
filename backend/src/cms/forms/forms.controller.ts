@@ -35,7 +35,11 @@ export class FormsController {
   @Patch(':id')
   @RequirePermission(Permission.CONTENT_WRITE)
   @Audit('form.updated', 'form')
-  update(@CurrentSite() site: Site, @Param('id', ParseUUIDPipe) id: string, @Body() dto: UpdateFormDto) {
+  update(
+    @CurrentSite() site: Site,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: UpdateFormDto,
+  ) {
     return this.forms.update(site.id, id, dto);
   }
 

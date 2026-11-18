@@ -40,7 +40,12 @@ export class TokenService {
   signAccess(user: { id: string; role: string; tokenVersion: number }) {
     const ttl = this.config.get('JWT_ACCESS_TTL');
     const accessToken = this.jwt.sign(
-      { sub: user.id, role: user.role, tv: user.tokenVersion, typ: 'access' } satisfies AccessPayload,
+      {
+        sub: user.id,
+        role: user.role,
+        tv: user.tokenVersion,
+        typ: 'access',
+      } satisfies AccessPayload,
       { secret: this.config.get('JWT_ACCESS_SECRET'), expiresIn: ttl as never },
     );
     const decoded = this.jwt.decode<{ exp: number }>(accessToken);
@@ -69,7 +74,8 @@ export class TokenService {
    * is treated as theft: the whole token family is revoked.
    */
   async rotate(raw: string): Promise<{ userId: string; refreshToken: string }> {
-    const invalid = () => new UnauthorizedException('Your session has expired. Please sign in again.');
+    const invalid = () =>
+      new UnauthorizedException('Your session has expired. Please sign in again.');
     const token = await this.prisma.refreshToken.findUnique({
       where: { tokenHash: sha256(raw) },
       include: { user: true },
@@ -87,7 +93,12 @@ export class TokenService {
           entityType: 'user',
           entityId: token.userId,
           summary: `Refresh token reuse detected for ${token.user.email} — all sessions in that family were revoked`,
-          actor: { id: token.user.id, name: token.user.name, email: token.user.email, role: token.user.role },
+          actor: {
+            id: token.user.id,
+            name: token.user.name,
+            email: token.user.email,
+            role: token.user.role,
+          },
           site: null,
         });
         throw invalid();

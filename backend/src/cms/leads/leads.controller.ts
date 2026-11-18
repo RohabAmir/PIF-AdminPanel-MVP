@@ -1,8 +1,26 @@
-import { Body, Controller, Delete, Get, Header, Param, ParseUUIDPipe, Patch, Post, Query, Res } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Header,
+  Param,
+  ParseUUIDPipe,
+  Patch,
+  Post,
+  Query,
+  Res,
+} from '@nestjs/common';
 import { ApiBearerAuth, ApiHeader, ApiProduces, ApiTags } from '@nestjs/swagger';
 import { Site } from '@prisma/client';
 import type { Response } from 'express';
-import { Audit, CurrentSite, CurrentUser, RequirePermission, SiteScoped } from '../../common/decorators';
+import {
+  Audit,
+  CurrentSite,
+  CurrentUser,
+  RequirePermission,
+  SiteScoped,
+} from '../../common/decorators';
 import { Permission } from '../../common/permissions';
 import type { AuthUser } from '../../common/types';
 import { LeadsService } from './leads.service';
@@ -27,7 +45,11 @@ export class LeadsController {
   @ApiProduces('text/csv')
   @Header('Content-Type', 'text/csv; charset=utf-8')
   @Header('Cache-Control', 'no-store')
-  async export(@CurrentSite() site: Site, @Query() q: LeadFiltersDto, @Res({ passthrough: true }) res: Response) {
+  async export(
+    @CurrentSite() site: Site,
+    @Query() q: LeadFiltersDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
     const { csv } = await this.leads.exportCsv(site.id, site.name, q);
     const stamp = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Disposition', `attachment; filename="leads-${site.slug}-${stamp}.csv"`);

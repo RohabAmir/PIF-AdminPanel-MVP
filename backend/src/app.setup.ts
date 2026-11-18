@@ -8,7 +8,10 @@ import { mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { AppConfig } from './config/app-config.service';
 
-function flattenErrors(errors: ValidationError[], parent = ''): { field: string; errors: string[] }[] {
+function flattenErrors(
+  errors: ValidationError[],
+  parent = '',
+): { field: string; errors: string[] }[] {
   return errors.flatMap((e) => {
     const field = parent ? `${parent}.${e.property}` : e.property;
     const own = e.constraints ? [{ field, errors: Object.values(e.constraints) }] : [];
