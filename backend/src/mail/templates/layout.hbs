@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{{subject}}</title>
+</head>
+<body style="margin:0;padding:0;background:#F0F1F7;font-family:Inter,Segoe UI,Helvetica,Arial,sans-serif;color:#333335;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#F0F1F7;padding:32px 12px;">
+    <tr><td align="center">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;background:#ffffff;border-radius:16px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+        <tr>
+          <td align="center" style="background:#1E1E2D;padding:28px 24px;">
+            <img src="{{logoUrl}}" alt="PIF Admin Panel" width="96" style="display:block;border:0;max-width:96px;height:auto;">
+            <div style="color:#A3AED1;font-size:12px;letter-spacing:1px;margin-top:10px;text-transform:uppercase;">PIF Admin Panel</div>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:32px 32px 8px 32px;">
+            {{{body}}}
+          </td>
+        </tr>
+        <tr>
+          <td style="padding:16px 32px 28px 32px;border-top:1px solid #F3F3F3;color:#8C9097;font-size:12px;line-height:18px;">
+            You received this email because an account on PIF Admin Panel is associated with this address.
+            If this wasn't you, you can safely ignore it.<br>© {{year}} PIF Admin Panel — demo project, all data is fictional.
+          </td>
+        </tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>

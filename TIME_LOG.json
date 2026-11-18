@@ -1,6 +1,14 @@
 {
   "start": "2026-11-18T21:58:33+05:00",
   "startMs": 1795021113041,
-  "marks": [],
+  "marks": [
+    {
+      "phase": "Phase 1 — Setup & recon",
+      "at": "2026-11-18T22:03:08+05:00",
+      "atMs": 1795021388543,
+      "phaseDuration": "0h 04m 36s",
+      "elapsed": "0h 04m 36s"
+    }
+  ],
   "end": null
 }

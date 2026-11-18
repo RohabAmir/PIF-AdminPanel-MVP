@@ -1,0 +1,412 @@
+// PIF Admin Panel — multi-tenant CMS schema.
+// Tenancy model: shared database, shared schema; every CMS table carries `siteId`.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  INACTIVE
+}
+
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum BlogStatus {
+  DRAFT
+  SCHEDULED
+  PUBLISHED
+}
+
+enum SectionType {
+  HERO
+  RICH_TEXT
+  IMAGE_TEXT
+  FEATURE_CARDS
+  STATS
+  TESTIMONIALS
+  FAQ
+  CTA
+  GALLERY
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  WON
+  LOST
+}
+
+enum SocialPlatform {
+  FACEBOOK
+  INSTAGRAM
+  X
+  LINKEDIN
+  YOUTUBE
+  TIKTOK
+  SNAPCHAT
+  WHATSAPP
+}
+
+// ───────────────────────────── Identity ─────────────────────────────
+
+model User {
+  id                    String     @id @default(uuid())
+  email                 String     @unique // always stored lower-cased
+  name                  String
+  passwordHash          String
+  role                  Role
+  status                UserStatus @default(PENDING)
+  mustChangePassword    Boolean    @default(true)
+  tempPasswordExpiresAt DateTime?
+  failedLoginAttempts   Int        @default(0)
+  lockedUntil           DateTime?
+  lastLoginAt           DateTime?
+  avatarColor           String     @default("#4A4A89")
+  tokenVersion          Int        @default(0) // bump to invalidate every access token
+  createdAt             DateTime   @default(now())
+  updatedAt             DateTime   @updatedAt
+
+  sites         UserSite[]
+  otpCodes      OtpCode[]
+  refreshTokens RefreshToken[]
+  resetTokens   PasswordResetToken[]
+  pagesCreated  Page[]               @relation("PageCreatedBy")
+  blogPosts     BlogPost[]           @relation("BlogAuthor")
+  mediaUploaded MediaAsset[]         @relation("MediaUploadedBy")
+
+  @@index([role])
+  @@index([status])
+}
+
+model Site {
+  id              String   @id @default(uuid())
+  name            String
+  slug            String   @unique
+  domain          String?
+  logoUrl         String?
+  faviconUrl      String?
+  primaryColor    String   @default("#4A4A89")
+  defaultLanguage String   @default("en")
+  isActive        Boolean  @default(true)
+  apiKeyHash      String   @unique // sha256 of the full public API key
+  apiKeyPrefix    String // first characters, for display only
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  users          UserSite[]
+  pages          Page[]
+  sections       Section[]
+  blogPosts      BlogPost[]
+  blogCategories BlogCategory[]
+  forms          Form[]
+  leads          Lead[]
+  leadNotes      LeadNote[]
+  socialLinks    SocialLink[]
+  seoSetting     SeoSetting?
+  mediaAssets    MediaAsset[]
+}
+
+model UserSite {
+  userId     String
+  siteId     String
+  assignedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@id([userId, siteId])
+  @@index([siteId])
+}
+
+model OtpCode {
+  id            String    @id @default(uuid())
+  userId        String
+  codeHash      String
+  expiresAt     DateTime
+  attempts      Int       @default(0)
+  resendCount   Int       @default(0)
+  lastSentAt    DateTime  @default(now())
+  consumedAt    DateTime?
+  invalidatedAt DateTime?
+  createdAt     DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model RefreshToken {
+  id           String    @id @default(uuid())
+  userId       String
+  familyId     String
+  tokenHash    String    @unique
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  revokeReason String? // rotated | logout | reuse | password_change | deactivated | logout_all
+  userAgent    String?
+  ip           String?
+  createdAt    DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([familyId])
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// ───────────────────────────── CMS (tenant-scoped) ─────────────────────────────
+
+model Page {
+  id          String     @id @default(uuid())
+  siteId      String
+  title       String
+  slug        String
+  status      PageStatus @default(DRAFT)
+  parentId    String?
+  order       Int        @default(0)
+  seo         Json? // per-page SEO overrides
+  publishedAt DateTime?
+  createdById String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  site      Site      @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  parent    Page?     @relation("PageTree", fields: [parentId], references: [id], onDelete: SetNull)
+  children  Page[]    @relation("PageTree")
+  createdBy User?     @relation("PageCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  sections  Section[]
+
+  @@unique([siteId, slug])
+  @@index([siteId, status])
+  @@index([siteId, order])
+}
+
+model Section {
+  id        String      @id @default(uuid())
+  siteId    String
+  pageId    String
+  type      SectionType
+  name      String
+  content   Json
+  order     Int         @default(0)
+  isVisible Boolean     @default(true)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  page Page @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([pageId, order])
+}
+
+model BlogCategory {
+  id        String   @id @default(uuid())
+  siteId    String
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site  Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  posts BlogPost[]
+
+  @@unique([siteId, slug])
+}
+
+model BlogPost {
+  id          String     @id @default(uuid())
+  siteId      String
+  title       String
+  slug        String
+  excerpt     String     @default("")
+  coverImage  String?
+  content     String     @default("") // sanitized HTML produced by the Tiptap editor
+  categoryId  String?
+  tags        String[]   @default([])
+  authorId    String?
+  status      BlogStatus @default(DRAFT)
+  publishedAt DateTime?
+  readingTime Int        @default(1) // minutes
+  seo         Json?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  site     Site          @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  category BlogCategory? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  author   User?         @relation("BlogAuthor", fields: [authorId], references: [id], onDelete: SetNull)
+
+  @@unique([siteId, slug])
+  @@index([siteId, status])
+  @@index([siteId, publishedAt])
+}
+
+model Form {
+  id                String   @id @default(uuid())
+  siteId            String
+  key               String
+  name              String
+  description       String   @default("")
+  fields            Json // FormField[]
+  successMessage    String   @default("Thank you! We will get back to you shortly.")
+  notificationEmail String?
+  isActive          Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  site  Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  leads Lead[]
+
+  @@unique([siteId, key])
+}
+
+model Lead {
+  id         String     @id @default(uuid())
+  siteId     String
+  formId     String?
+  formName   String // snapshot, survives form deletion
+  data       Json // raw submitted values keyed by field name
+  name       String?
+  email      String?
+  phone      String?
+  sourcePage String?
+  status     LeadStatus @default(NEW)
+  ip         String?
+  userAgent  String?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+
+  site  Site       @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  form  Form?      @relation(fields: [formId], references: [id], onDelete: SetNull)
+  notes LeadNote[]
+
+  @@index([siteId, createdAt])
+  @@index([siteId, status])
+  @@index([formId])
+}
+
+model LeadNote {
+  id         String   @id @default(uuid())
+  siteId     String
+  leadId     String
+  authorId   String?
+  authorName String
+  body       String
+  createdAt  DateTime @default(now())
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@index([siteId])
+}
+
+model SocialLink {
+  id        String         @id @default(uuid())
+  siteId    String
+  platform  SocialPlatform
+  url       String
+  order     Int            @default(0)
+  isActive  Boolean        @default(true)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@unique([siteId, platform])
+  @@index([siteId, order])
+}
+
+model SeoSetting {
+  id                     String   @id @default(uuid())
+  siteId                 String   @unique
+  titleTemplate          String   @default("%s | Site")
+  defaultMetaDescription String   @default("")
+  defaultOgImage         String?
+  robotsTxt              String   @default("User-agent: *\nAllow: /")
+  canonicalBaseUrl       String?
+  googleVerification     String?
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  site Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+}
+
+model MediaAsset {
+  id           String   @id @default(uuid())
+  siteId       String
+  url          String
+  storageKey   String? // local path or cloudinary public id
+  storage      String // local | cloudinary | external
+  filename     String
+  mimeType     String
+  size         Int      @default(0)
+  alt          String   @default("")
+  uploadedById String?
+  createdAt    DateTime @default(now())
+
+  site       Site  @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  uploadedBy User? @relation("MediaUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([siteId, createdAt])
+}
+
+// ───────────────────────────── Audit (append-only) ─────────────────────────────
+// No foreign keys on purpose: logs must survive deletion of users and sites.
+
+model ActivityLog {
+  id         String   @id @default(uuid())
+  createdAt  DateTime @default(now())
+  actorId    String?
+  actorName  String?
+  actorEmail String?
+  actorRole  Role?
+  siteId     String?
+  siteName   String?
+  action     String
+  entityType String?
+  entityId   String?
+  summary    String
+  before     Json?
+  after      Json?
+  ip         String?
+  userAgent  String?
+  requestId  String?
+
+  @@index([createdAt])
+  @@index([actorId, createdAt])
+  @@index([siteId, createdAt])
+  @@index([action])
+  @@index([entityType])
+}

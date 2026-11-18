@@ -15,3 +15,4 @@ test-results/
 e2e/.auth/
 .vercel
 *.tsbuildinfo
+uploads-test/

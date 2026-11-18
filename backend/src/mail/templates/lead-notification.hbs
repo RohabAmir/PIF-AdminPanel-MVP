@@ -1,0 +1,8 @@
+<h1 style="margin:0 0 12px 0;font-size:20px;color:#4A4A89;">New lead from {{formName}}</h1>
+<p style="margin:0 0 16px 0;font-size:14px;line-height:22px;">A visitor submitted the <b>{{formName}}</b> form on <b>{{siteName}}</b>.</p>
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border:1px solid #E9EDF6;border-radius:12px;margin:0 0 20px 0;font-size:14px;">
+  {{#each fields}}
+  <tr><td style="padding:10px 14px;border-bottom:1px solid #F3F3F3;color:#8C9097;width:35%;">{{label}}</td><td style="padding:10px 14px;border-bottom:1px solid #F3F3F3;">{{value}}</td></tr>
+  {{/each}}
+</table>
+<p style="text-align:center;margin:0 0 24px 0;"><a href="{{leadsUrl}}" style="display:inline-block;background:#552A0E;color:#ffffff;text-decoration:none;font-weight:600;font-size:14px;border-radius:999px;padding:12px 32px;">Open leads</a></p>
