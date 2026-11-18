@@ -1,0 +1,37 @@
+# Local development infrastructure: PostgreSQL 16 + Mailpit (SMTP catcher).
+#   docker compose up -d
+# Postgres -> localhost:5432 (pif / pif, databases pif_admin + pif_admin_test)
+# Mailpit  -> SMTP localhost:1025, inbox UI http://localhost:8025
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: pif-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: pif
+      POSTGRES_PASSWORD: pif
+      POSTGRES_DB: pif_admin
+    ports:
+      - '5432:5432'
+    volumes:
+      - pif_pgdata:/var/lib/postgresql/data
+      - ./scripts/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U pif -d pif_admin']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: pif-mailpit
+    restart: unless-stopped
+    ports:
+      - '1025:1025'
+      - '8025:8025'
+    environment:
+      MP_SMTP_AUTH_ACCEPT_ANY: 1
+      MP_SMTP_AUTH_ALLOW_INSECURE: 1
+
+volumes:
+  pif_pgdata:

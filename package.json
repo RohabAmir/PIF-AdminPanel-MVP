@@ -1,0 +1,45 @@
+{
+  "name": "pif-adminpanel-mvp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "PIF Admin Panel — multi-tenant CMS admin panel (React + NestJS + PostgreSQL)",
+  "license": "MIT",
+  "scripts": {
+    "setup": "npm install && npm --prefix backend install && npm --prefix frontend install",
+    "infra": "docker compose up -d",
+    "infra:local": "node scripts/local-infra.mjs",
+    "db:setup": "npm --prefix backend run db:migrate && npm --prefix backend run db:seed",
+    "dev": "concurrently -n api,web -c magenta,cyan \"npm --prefix backend run start:dev\" \"npm --prefix frontend run dev\"",
+    "lint": "npm --prefix backend run lint && npm --prefix frontend run lint",
+    "typecheck": "npm --prefix backend run typecheck && npm --prefix frontend run typecheck",
+    "test": "npm --prefix backend run test && npm --prefix frontend run test",
+    "build": "npm --prefix backend run build && npm --prefix frontend run build",
+    "e2e": "playwright test",
+    "timelog": "node scripts/timelog.mjs",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "backend/**/*.ts": [
+      "prettier --write"
+    ],
+    "frontend/**/*.{ts,tsx}": [
+      "prettier --write"
+    ],
+    "*.{md,json,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.49.1",
+    "concurrently": "^9.2.5",
+    "embedded-postgres": "^16.15.0-beta.19",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.5.2",
+    "mailparser": "^3.14.5",
+    "prettier": "^3.10.1",
+    "smtp-server": "^3.21.6"
+  }
+}

@@ -1,0 +1,17 @@
+node_modules/
+dist/
+build/
+coverage/
+.env
+.env.*
+!.env.example
+*.log
+.DS_Store
+.local-infra/
+backend/uploads/*
+!backend/uploads/.gitkeep
+playwright-report/
+test-results/
+e2e/.auth/
+.vercel
+*.tsbuildinfo
