@@ -21,7 +21,8 @@ permissions:
 jobs:
   backend:
     name: Backend → Render
-    if: github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success')
+    # Deployment stays off until the repository variable DEPLOY_ENABLED is set to 'true' (after Render/Vercel are configured).
+    if: vars.DEPLOY_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || (github.event_name == 'workflow_run' && github.event.workflow_run.conclusion == 'success'))
     runs-on: ubuntu-latest
     environment: production
     steps:
@@ -78,7 +79,7 @@ jobs:
 
   preview:
     name: Frontend → Vercel (PR preview)
-    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
+    if: vars.DEPLOY_ENABLED == 'true' && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     env:
       VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}

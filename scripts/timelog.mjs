@@ -56,11 +56,20 @@ if (cmd === 'start') {
   });
   save(data);
   console.log(`[${isoLocal(now)}] ${name} — elapsed ${fmt(now.getTime() - data.startMs)}`);
+} else if (cmd === 'note') {
+  const text = rest.join(' ').trim();
+  const data = load();
+  data.notes = [...(data.notes ?? []), text];
+  save(data);
+  console.log('Note added.');
 } else if (cmd === 'end') {
   const data = load();
-  data.end = isoLocal(now);
-  data.endMs = now.getTime();
-  save(data);
+  // `end --rerender` regenerates the report without moving the recorded end time.
+  if (!(rest.includes('--rerender') && data.endMs)) {
+    data.end = isoLocal(now);
+    data.endMs = now.getTime();
+    save(data);
+  }
   const rows = [];
   let prevMs = data.startMs;
   let prevIso = data.start;
@@ -95,12 +104,12 @@ All timestamps come from the system clock (\`scripts/timelog.mjs\`), not estimat
 ${rows.join('\n')}
 
 ## Summary
-
+${data.notes?.length ? `\n${data.notes.map((n) => `- ${n}`).join('\n')}\n` : ''}
 ${data.marks.length} phases tracked. The local MVP (backend, frontend, tests, docs and CI/CD files) was built in ${fmt(localBuild)} of wall-clock time${deploy ? `; deployment took ${fmt(deploy)}, for a combined ${fmt(localBuild + deploy)}` : ''}.
 `;
   writeFileSync(REPORT, md);
   console.log(md);
 } else {
-  console.log('Usage: node scripts/timelog.mjs start | mark "<phase>" | end');
+  console.log('Usage: node scripts/timelog.mjs start | mark "<phase>" | note "<text>" | end');
   process.exit(1);
 }
