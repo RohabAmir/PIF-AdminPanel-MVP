@@ -1,0 +1,70 @@
+# Render Blueprint — backend API + PostgreSQL.
+# Create via Render Dashboard → Blueprints → New Blueprint Instance → this repo.
+# Secret values are set in the dashboard (sync: false), never committed.
+databases:
+  - name: pif-admin-db
+    plan: free
+    databaseName: pif_admin
+    user: pif
+    postgresMajorVersion: '16'
+
+services:
+  - type: web
+    name: pif-admin-api
+    runtime: node
+    plan: free
+    region: frankfurt
+    rootDir: backend
+    buildCommand: npm ci && npx prisma generate && npm run build
+    preDeployCommand: npx prisma migrate deploy
+    # The free plan has no pre-deploy step, so migrations also run at start (idempotent).
+    startCommand: npx prisma migrate deploy && node dist/main
+    healthCheckPath: /api/health
+    autoDeploy: false # deploys are triggered by GitHub Actions only after CI passes
+    envVars:
+      - key: NODE_VERSION
+        value: '22'
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pif-admin-db
+          property: connectionString
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: JWT_OTP_SECRET
+        generateValue: true
+      - key: TRUST_PROXY
+        value: '2'
+      - key: COOKIE_SECURE
+        value: 'true'
+      - key: COOKIE_SAMESITE
+        value: lax
+      - key: DEMO_MODE
+        value: 'true'
+      - key: MEDIA_DRIVER
+        value: cloudinary # falls back to URL-only images if Cloudinary vars are empty
+      - key: FRONTEND_URL
+        sync: false # e.g. https://pif-admin-panel.vercel.app
+      - key: API_PUBLIC_URL
+        sync: false # e.g. https://pif-admin-panel.vercel.app (served through the Vercel proxy)
+      - key: CORS_ORIGINS
+        sync: false # same as FRONTEND_URL
+      - key: SMTP_HOST
+        sync: false
+      - key: SMTP_PORT
+        sync: false
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASS
+        sync: false
+      - key: SMTP_SECURE
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false

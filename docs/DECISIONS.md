@@ -16,3 +16,4 @@ One line per decision: **decision** — reason.
 - **In DEMO_MODE the 4 seeded accounts are protected** (no password change, deactivation, role change or deletion) — so recruiters cannot break the shared demo for the next visitor.
 - **Seeded public API keys are fixed and documented** — they only expose already-public content and form submission; override with SEED_TUAJA_API_KEY / SEED_DAN_API_KEY or regenerate in the UI.
 - **Frontend keeps react-router-dom v6 and Tiptap v2 despite moderate advisories** — the spec pins Router v6 and Tiptap v3 is a breaking rewrite; both advisories are moderate (CI treats moderate as a warning), no high/critical remain. zod moved to v4 to clear a high advisory.
+- **Root `e2e/` folder for the Playwright smoke test** — it exercises the whole stack (frontend + API + Mailpit), so it lives at the monorepo root rather than inside one app.

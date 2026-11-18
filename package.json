@@ -19,12 +19,6 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "backend/**/*.ts": [
-      "prettier --write"
-    ],
-    "frontend/**/*.{ts,tsx}": [
-      "prettier --write"
-    ],
     "*.{md,json,yml,yaml}": [
       "prettier --write"
     ]
@@ -40,6 +34,7 @@
     "lint-staged": "^15.5.2",
     "mailparser": "^3.14.5",
     "prettier": "^3.10.1",
-    "smtp-server": "^3.21.6"
+    "smtp-server": "^3.21.6",
+    "wait-on": "^8.0.5"
   }
 }

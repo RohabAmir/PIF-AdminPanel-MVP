@@ -1,0 +1,17 @@
+name: Keep-alive (optional)
+
+# Render's free web services sleep after ~15 min of inactivity. Pinging /api/health
+# every 14 minutes keeps the demo responsive. Disable this workflow if you upgrade the plan.
+on:
+  schedule:
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    if: vars.API_URL != ''
+    runs-on: ubuntu-latest
+    steps:
+      - run: curl -fsS --max-time 60 "${{ vars.API_URL }}/api/health" || echo "::warning::health check failed (service may be waking up)"

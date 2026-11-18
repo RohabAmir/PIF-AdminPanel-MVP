@@ -1,0 +1,159 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Demo tenant website — powered by PIF Admin Panel</title>
+<meta name="description" content="A tiny example website that reads published content from the PIF Admin Panel public API and submits leads.">
+<link rel="icon" href="/favicon.ico">
+<style>
+  :root { --brand: #7549AD; --ink: #26262c; --muted: #6b6f78; --bg: #f7f6fb; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: Inter, system-ui, -apple-system, Segoe UI, sans-serif; color: var(--ink); background: var(--bg); line-height: 1.55; }
+  header { background: #1e1e2d; color: #fff; padding: 14px 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; }
+  header strong { font-size: 18px; }
+  nav a { color: #c9cdf0; margin-right: 14px; text-decoration: none; font-size: 14px; }
+  nav a:hover { color: #fff; }
+  .bar { background: #fff8e6; border-bottom: 1px solid #f1e2b6; padding: 10px 20px; font-size: 13px; display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .bar input, .bar select { padding: 6px 8px; border: 1px solid #ddd; border-radius: 6px; font: inherit; }
+  .bar input { min-width: 320px; font-family: ui-monospace, monospace; font-size: 12px; }
+  main { max-width: 1000px; margin: 0 auto; padding: 24px 20px 60px; }
+  section.block { background: #fff; border-radius: 14px; padding: 28px; margin: 18px 0; box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+  .hero { position: relative; color: #fff; overflow: hidden; background: #1e1e2d; text-align: center; padding: 70px 24px !important; }
+  .hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .45; }
+  .hero > * { position: relative; }
+  .hero h2 { font-size: 34px; margin: 0 0 8px; }
+  .btn { display: inline-block; background: var(--brand); color: #fff; border: 0; border-radius: 999px; padding: 10px 22px; font-weight: 600; cursor: pointer; text-decoration: none; font: inherit; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .card { border: 1px solid #eee; border-radius: 10px; padding: 14px; }
+  .stats { background: var(--brand); color: #fff; text-align: center; }
+  .stats b { display: block; font-size: 28px; }
+  .imgtext { display: grid; gap: 20px; grid-template-columns: 1fr 1fr; align-items: center; }
+  .imgtext img, .gallery img { width: 100%; border-radius: 10px; object-fit: cover; aspect-ratio: 16/10; }
+  .gallery { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+  details { border-bottom: 1px solid #eee; padding: 10px 0; }
+  .posts article { display: grid; grid-template-columns: 140px 1fr; gap: 14px; align-items: center; margin-bottom: 14px; }
+  .posts img { width: 140px; height: 90px; object-fit: cover; border-radius: 8px; }
+  form label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+  form input[type=text], form input[type=email], form input[type=tel], form textarea, form select { width: 100%; padding: 9px 10px; border: 1px solid #ddd; border-radius: 8px; font: inherit; }
+  .err { color: #c0392b; font-size: 12px; }
+  .ok { background: #e8f8f2; color: #12795a; padding: 12px; border-radius: 8px; }
+  .muted { color: var(--muted); font-size: 13px; }
+  footer { text-align: center; color: var(--muted); font-size: 13px; padding: 30px 20px; }
+  footer a { color: var(--brand); margin: 0 6px; }
+  .hp { position: absolute; left: -9999px; }
+  @media (max-width: 640px) { .imgtext { grid-template-columns: 1fr; } .bar input { min-width: 0; width: 100%; } .posts article { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<header><strong id="site-title">Demo tenant website</strong><nav id="nav" aria-label="Pages"></nav></header>
+<div class="bar">
+  <label for="key">X-API-Key</label>
+  <select id="preset" aria-label="Demo site">
+    <option value="pif_tuajadem_PublicDemoKey-TuajaDemo-2026">Tuaja Demo</option>
+    <option value="pif_dandemo1_PublicDemoKey-DanDemo-2026xx">Dan Demo</option>
+  </select>
+  <input id="key" aria-label="API key">
+  <button class="btn" id="load" type="button" style="padding:6px 14px">Load</button>
+  <span class="muted">This static page only uses the public, read-only API — exactly what a real tenant website would do.</span>
+</div>
+<main>
+  <div id="page" aria-live="polite"><p class="muted">Loading…</p></div>
+  <section class="block" id="blog"><h2>Latest from the blog</h2><div class="posts" id="posts"></div></section>
+  <section class="block" id="contact">
+    <h2 id="form-title">Contact us</h2>
+    <p class="muted">Submitting this form creates a <b>Lead</b> you can see instantly in the admin panel → Leads.</p>
+    <form id="form" novalidate></form>
+  </section>
+</main>
+<footer><div id="social"></div><p>Demo project — all data is fictional. Powered by PIF Admin Panel.</p></footer>
+<script>
+(() => {
+  const API = '/api/public';
+  const $ = (s) => document.querySelector(s);
+  const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+  const url = (u) => (/^(https?:)?\/\//.test(u || '') || (u || '').startsWith('/') ? esc(u) : '');
+  let key = new URLSearchParams(location.search).get('key') || $('#preset').value;
+  $('#key').value = key;
+
+  const get = async (path) => {
+    const r = await fetch(API + path, { headers: { 'X-API-Key': key } });
+    const body = await r.json();
+    if (!r.ok) throw new Error(body.message || r.statusText);
+    return body;
+  };
+
+  const block = (s) => {
+    const c = s.content || {};
+    switch (s.type) {
+      case 'HERO': return `<section class="block hero">${c.backgroundImage ? `<img src="${url(c.backgroundImage)}" alt="">` : ''}<h2>${esc(c.heading)}</h2><p>${esc(c.subheading)}</p>${c.ctaLabel ? `<a class="btn" href="#contact">${esc(c.ctaLabel)}</a>` : ''}</section>`;
+      case 'RICH_TEXT': return `<section class="block">${c.html || ''}</section>`; // sanitised server-side
+      case 'IMAGE_TEXT': return `<section class="block imgtext" style="${c.imagePosition === 'right' ? 'direction:rtl' : ''}"><img src="${url(c.image)}" alt="${esc(c.imageAlt)}"><div style="direction:ltr"><h2>${esc(c.heading)}</h2><p>${esc(c.body)}</p></div></section>`;
+      case 'FEATURE_CARDS': return `<section class="block"><h2>${esc(c.heading)}</h2><div class="grid">${(c.items || []).map((i) => `<div class="card"><b>${esc(i.title)}</b><p class="muted">${esc(i.description)}</p></div>`).join('')}</div></section>`;
+      case 'STATS': return `<section class="block stats"><h2 style="color:#fff">${esc(c.heading)}</h2><div class="grid">${(c.items || []).map((i) => `<div><b>${esc(i.value)}</b>${esc(i.label)}</div>`).join('')}</div></section>`;
+      case 'TESTIMONIALS': return `<section class="block"><h2>${esc(c.heading)}</h2><div class="grid">${(c.items || []).map((i) => `<blockquote class="card">“${esc(i.quote)}”<br><span class="muted">— ${esc(i.author)}</span></blockquote>`).join('')}</div></section>`;
+      case 'FAQ': return `<section class="block"><h2>${esc(c.heading)}</h2>${(c.items || []).map((i) => `<details><summary><b>${esc(i.question)}</b></summary><p>${esc(i.answer)}</p></details>`).join('')}</section>`;
+      case 'CTA': return `<section class="block" style="text-align:center"><h2>${esc(c.heading)}</h2><p>${esc(c.body)}</p><a class="btn" href="#contact">${esc(c.buttonLabel)}</a></section>`;
+      case 'GALLERY': return `<section class="block"><h2>${esc(c.heading)}</h2><div class="gallery">${(c.images || []).map((i) => `<img src="${url(i.url)}" alt="${esc(i.alt)}">`).join('')}</div></section>`;
+      default: return '';
+    }
+  };
+
+  const renderPage = async (slug) => {
+    try {
+      const p = await get(`/pages/${encodeURIComponent(slug)}`);
+      document.title = p.seo?.title || p.title;
+      $('#page').innerHTML = p.sections.map(block).join('') || `<section class="block"><h2>${esc(p.title)}</h2></section>`;
+    } catch (e) { $('#page').innerHTML = `<section class="block"><p class="err">${esc(e.message)}</p></section>`; }
+  };
+
+  const renderForm = async () => {
+    const f = await get('/forms/contact');
+    $('#form-title').textContent = f.name;
+    $('#form').innerHTML = f.fields.map((x) => {
+      const req = x.required ? ' required' : '';
+      const lab = `<label for="f-${x.name}">${esc(x.label)}${x.required ? ' *' : ''}</label>`;
+      if (x.type === 'textarea') return lab + `<textarea id="f-${x.name}" name="${x.name}" rows="4"${req}></textarea><div class="err" data-for="${x.name}"></div>`;
+      if (x.type === 'select') return lab + `<select id="f-${x.name}" name="${x.name}"${req}><option value="">Choose…</option>${(x.options || []).map((o) => `<option>${esc(o)}</option>`).join('')}</select><div class="err" data-for="${x.name}"></div>`;
+      if (x.type === 'checkbox' && !(x.options || []).length) return `<label><input type="checkbox" name="${x.name}"> ${esc(x.label)}${x.required ? ' *' : ''}</label><div class="err" data-for="${x.name}"></div>`;
+      if (x.type === 'radio' || x.type === 'checkbox') return `<label>${esc(x.label)}</label>${(x.options || []).map((o) => `<label style="font-weight:400;display:inline-block;margin-right:12px"><input type="${x.type}" name="${x.name}" value="${esc(o)}"> ${esc(o)}</label>`).join('')}<div class="err" data-for="${x.name}"></div>`;
+      const t = x.type === 'email' ? 'email' : x.type === 'phone' ? 'tel' : 'text';
+      return lab + `<input id="f-${x.name}" type="${t}" name="${x.name}" placeholder="${esc(x.placeholder)}"${req}><div class="err" data-for="${x.name}"></div>`;
+    }).join('') + `<input class="hp" name="_hp" tabindex="-1" autocomplete="off" aria-hidden="true"><p><button class="btn" type="submit">Send</button></p><div id="form-msg" role="status"></div>`;
+    $('#form').onsubmit = async (ev) => {
+      ev.preventDefault();
+      const fd = new FormData(ev.target);
+      const data = {};
+      for (const x of f.fields) {
+        const all = fd.getAll(x.name);
+        data[x.name] = x.type === 'checkbox' ? ((x.options || []).length ? all : all.length > 0) : (all[0] || '');
+      }
+      document.querySelectorAll('.err').forEach((e) => (e.textContent = ''));
+      const r = await fetch(API + '/forms/contact/submit', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-API-Key': key }, body: JSON.stringify({ data, sourcePage: location.pathname, _hp: fd.get('_hp') || undefined }) });
+      const body = await r.json();
+      if (r.ok) { ev.target.reset(); $('#form-msg').innerHTML = `<p class="ok">${esc(body.message)}</p>`; }
+      else { (body.details || []).forEach((d) => { const el = document.querySelector(`.err[data-for="${d.field}"]`); if (el) el.textContent = d.errors[0]; }); $('#form-msg').innerHTML = `<p class="err">${esc(body.message)}</p>`; }
+    };
+  };
+
+  const load = async () => {
+    try {
+      const [pages, blogs, social] = await Promise.all([get('/pages'), get('/blogs?pageSize=3'), get('/social-links')]);
+      $('#site-title').textContent = $('#preset').selectedOptions[0]?.value === key ? $('#preset').selectedOptions[0].textContent : 'Demo tenant website';
+      $('#nav').innerHTML = pages.data.filter((p) => !p.parentId).map((p) => `<a href="#/${esc(p.slug)}">${esc(p.title)}</a>`).join('');
+      $('#posts').innerHTML = blogs.data.map((b) => `<article>${b.coverImage ? `<img src="${url(b.coverImage)}" alt="">` : '<div></div>'}<div><b>${esc(b.title)}</b><p class="muted">${esc(b.excerpt)} · ${b.readingTime} min</p></div></article>`).join('') || '<p class="muted">No posts yet.</p>';
+      $('#social').innerHTML = social.data.map((s) => `<a href="${url(s.url)}" rel="noopener" target="_blank">${esc(s.platform.toLowerCase())}</a>`).join('');
+      await renderPage((location.hash.slice(2)) || pages.data[0]?.slug || 'home');
+      await renderForm();
+    } catch (e) {
+      $('#page').innerHTML = `<section class="block"><p class="err">Could not load content: ${esc(e.message)}</p></section>`;
+    }
+  };
+  window.addEventListener('hashchange', () => renderPage(location.hash.slice(2) || 'home'));
+  $('#preset').onchange = (e) => { key = e.target.value; $('#key').value = key; load(); };
+  $('#load').onclick = () => { key = $('#key').value.trim(); load(); };
+  load();
+})();
+</script>
+</body>
+</html>
