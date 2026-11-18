@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { ArrowDown, ArrowLeft, ArrowUp, Code2, Plus, Save, Trash2 } from 'lucide-react';
@@ -27,6 +27,51 @@ const TYPES: { value: FieldType; label: string }[] = [
   { value: 'radio', label: 'Single choice' },
   { value: 'checkbox', label: 'Checkbox(es)' },
 ];
+/** One option per line. Keeps the raw text locally so blank lines can be typed, and re-syncs when fields move. */
+function OptionsInput({
+  value,
+  onChange,
+  disabled,
+  ...aria
+}: {
+  value: string[];
+  onChange: (v: string[]) => void;
+  disabled?: boolean;
+  id?: string;
+  'aria-invalid'?: boolean;
+  'aria-describedby'?: string;
+}) {
+  const [text, setText] = useState(value.join('\n'));
+  const textRef = useRef(text);
+  textRef.current = text;
+  const joined = value.join('\n');
+  useEffect(() => {
+    const parsed = textRef.current
+      .split('\n')
+      .map((x) => x.trim())
+      .filter(Boolean)
+      .join('\n');
+    if (parsed !== joined) setText(joined);
+  }, [joined]);
+  return (
+    <Textarea
+      {...aria}
+      rows={3}
+      disabled={disabled}
+      value={text}
+      onChange={(e) => {
+        setText(e.target.value);
+        onChange(
+          e.target.value
+            .split('\n')
+            .map((x) => x.trim())
+            .filter(Boolean),
+        );
+      }}
+    />
+  );
+}
+
 const hasOptions = (t: FieldType) => t === 'select' || t === 'radio' || t === 'checkbox';
 
 interface Draft {
@@ -136,7 +181,6 @@ export default function FormBuilderPage() {
   const [initial, setInitial] = useState<Draft>(EMPTY);
   const [keyTouched, setKeyTouched] = useState(!isNew);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [optionDrafts, setOptionDrafts] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (formQ.data) {
@@ -154,10 +198,6 @@ export default function FormBuilderPage() {
       setInitial(d);
     }
   }, [formQ.data]);
-  useEffect(
-    () => setOptionDrafts(Object.fromEntries(draft.fields.map((f, i) => [i, (f.options ?? []).join('\n')]))),
-    [draft.fields.length],
-  ); // eslint-disable-line react-hooks/exhaustive-deps
 
   const dirty = useMemo(() => JSON.stringify(draft) !== JSON.stringify(initial), [draft, initial]);
   const blocker = useUnsavedChanges(dirty);
@@ -545,19 +585,10 @@ export default function FormBuilderPage() {
                           f.type === 'checkbox' ? 'Leave empty for a single consent checkbox.' : undefined
                         }
                       >
-                        <Textarea
-                          rows={3}
+                        <OptionsInput
                           disabled={!canWrite}
-                          value={optionDrafts[i] ?? (f.options ?? []).join('\n')}
-                          onChange={(e) => {
-                            setOptionDrafts((o) => ({ ...o, [i]: e.target.value }));
-                            setField(i, {
-                              options: e.target.value
-                                .split('\n')
-                                .map((x) => x.trim())
-                                .filter(Boolean),
-                            });
-                          }}
+                          value={f.options ?? []}
+                          onChange={(options) => setField(i, { options })}
                         />
                       </Field>
                     )}
