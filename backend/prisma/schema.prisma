@@ -45,6 +45,9 @@ enum SectionType {
   FAQ
   CTA
   GALLERY
+  IMAGE_CARDS
+  LATEST_POSTS
+  FORM
 }
 
 enum LeadStatus {

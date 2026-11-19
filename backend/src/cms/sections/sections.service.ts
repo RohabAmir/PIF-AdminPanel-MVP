@@ -15,6 +15,9 @@ const TYPE_LABEL: Record<SectionType, string> = {
   FAQ: 'FAQ',
   CTA: 'Call to action',
   GALLERY: 'Gallery',
+  IMAGE_CARDS: 'Image cards',
+  LATEST_POSTS: 'Latest posts',
+  FORM: 'Form',
 };
 
 @Injectable()

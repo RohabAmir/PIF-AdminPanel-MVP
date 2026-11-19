@@ -25,8 +25,11 @@ import {
   ArrowLeft,
   Braces,
   Copy,
+  ExternalLink,
   Eye,
   EyeOff,
+  Monitor,
+  Smartphone,
   GripVertical,
   LayoutTemplate,
   Plus,
@@ -54,6 +57,7 @@ import { SeoEditor } from '@/components/cms/SeoEditor';
 import { SectionEditor } from '@/components/cms/SectionEditor';
 import { SectionPreview } from '@/components/cms/SectionPreview';
 import { BLOCKS, SECTION_TYPES, validateBlock } from '@/components/cms/section-config';
+import { websiteBySiteSlug, websitePageUrl } from '@/websites/registry';
 
 type Obj = Record<string, unknown>;
 
@@ -148,6 +152,8 @@ export default function PageEditorPage() {
   const { can } = useAuth();
   const canWrite = can(P.CONTENT_WRITE);
   const [tab, setTab] = useState('sections');
+  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop');
+  const website = websiteBySiteSlug(site?.slug);
 
   const pageQ = useSiteQuery(
     ['pages', 'detail', id],
@@ -345,7 +351,67 @@ export default function PageEditorPage() {
     );
   }
   const page = pageQ.data;
+  const websiteUrl = website ? websitePageUrl(website, page.slug) : null;
   const previewUrl = `${site?.domain ? `https://${site.domain}` : 'https://example.com'}/${page.slug === 'home' ? '' : page.slug}`;
+
+  const sectionList = (
+    <Card className="h-fit">
+      <CardHeader
+        title="Page sections"
+        description={canWrite ? 'Drag to reorder · toggle to show/hide' : 'Read-only'}
+        actions={
+          canWrite && (
+            <Button size="sm" variant="violet" onClick={() => setAdding(true)}>
+              <Plus className="h-4 w-4" /> Add
+            </Button>
+          )
+        }
+      />
+      <CardBody className="p-3 sm:p-3">
+        {sectionsQ.isLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 4 }, (_, i) => (
+              <Skeleton key={i} className="h-12" />
+            ))}
+          </div>
+        ) : order.length === 0 ? (
+          <EmptyState
+            icon={<LayoutTemplate />}
+            title="No sections yet"
+            description="Build this page from typed content blocks."
+            action={
+              canWrite && (
+                <Button size="sm" onClick={() => setAdding(true)}>
+                  <Plus className="h-4 w-4" /> Add section
+                </Button>
+              )
+            }
+          />
+        ) : (
+          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
+            <SortableContext items={order.map((s) => s.id)} strategy={verticalListSortingStrategy}>
+              <ul className="space-y-2" aria-label="Sections in display order">
+                {order.map((s) => (
+                  <SortableRow
+                    key={s.id}
+                    section={s}
+                    selected={s.id === selectedId}
+                    dirty={!!drafts[s.id]}
+                    canWrite={canWrite}
+                    onSelect={() => {
+                      setSelectedId(s.id);
+                      setServerErrors({});
+                    }}
+                    onToggle={(v) => toggleVisible.mutate({ s, v })}
+                  />
+                ))}
+              </ul>
+            </SortableContext>
+          </DndContext>
+        )}
+      </CardBody>
+    </Card>
+  );
 
   return (
     <div className="space-y-5">
@@ -368,39 +434,48 @@ export default function PageEditorPage() {
             </p>
           </div>
         </div>
-        {can(P.CONTENT_PUBLISH) && (
-          <div className="flex flex-wrap gap-2">
-            {page.status !== 'ARCHIVED' && (
-              <Button
-                variant="outline"
-                size="sm"
-                loading={statusAction.isPending && statusAction.variables === 'archive'}
-                onClick={() => statusAction.mutate('archive')}
-              >
-                Archive
-              </Button>
-            )}
-            {page.status === 'PUBLISHED' ? (
-              <Button
-                variant="outline"
-                size="sm"
-                loading={statusAction.isPending && statusAction.variables === 'unpublish'}
-                onClick={() => statusAction.mutate('unpublish')}
-              >
-                <EyeOff className="h-4 w-4" /> Unpublish
-              </Button>
-            ) : (
-              <Button
-                variant="success"
-                size="sm"
-                loading={statusAction.isPending && statusAction.variables === 'publish'}
-                onClick={() => statusAction.mutate('publish')}
-              >
-                <Eye className="h-4 w-4" /> Publish
-              </Button>
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap gap-2">
+          {websiteUrl && page.status === 'PUBLISHED' && (
+            <Button asChild variant="outline" size="sm">
+              <a href={websiteUrl} target="_blank" rel="noreferrer" data-testid="view-on-website">
+                <ExternalLink className="h-4 w-4" /> View on website
+              </a>
+            </Button>
+          )}
+          {can(P.CONTENT_PUBLISH) && (
+            <>
+              {page.status !== 'ARCHIVED' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  loading={statusAction.isPending && statusAction.variables === 'archive'}
+                  onClick={() => statusAction.mutate('archive')}
+                >
+                  Archive
+                </Button>
+              )}
+              {page.status === 'PUBLISHED' ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  loading={statusAction.isPending && statusAction.variables === 'unpublish'}
+                  onClick={() => statusAction.mutate('unpublish')}
+                >
+                  <EyeOff className="h-4 w-4" /> Unpublish
+                </Button>
+              ) : (
+                <Button
+                  variant="success"
+                  size="sm"
+                  loading={statusAction.isPending && statusAction.variables === 'publish'}
+                  onClick={() => statusAction.mutate('publish')}
+                >
+                  <Eye className="h-4 w-4" /> Publish
+                </Button>
+              )}
+            </>
+          )}
+        </div>
       </div>
 
       <Tabs value={tab} onValueChange={setTab}>
@@ -410,6 +485,7 @@ export default function PageEditorPage() {
               Sections ({order.length})
               {dirtySections.length > 0 && <span className="text-warning-ink">●</span>}
             </TabsTrigger>
+            {website && <TabsTrigger value="website">Website preview</TabsTrigger>}
             <TabsTrigger value="details">
               Details{details.formState.isDirty && <span className="text-warning-ink">●</span>}
             </TabsTrigger>
@@ -421,62 +497,7 @@ export default function PageEditorPage() {
 
         <TabsContent value="sections" className="mt-5">
           <div className="grid grid-cols-1 gap-5 xl:grid-cols-[340px_1fr]">
-            <Card className="h-fit">
-              <CardHeader
-                title="Page sections"
-                description={canWrite ? 'Drag to reorder · toggle to show/hide' : 'Read-only'}
-                actions={
-                  canWrite && (
-                    <Button size="sm" variant="violet" onClick={() => setAdding(true)}>
-                      <Plus className="h-4 w-4" /> Add
-                    </Button>
-                  )
-                }
-              />
-              <CardBody className="p-3 sm:p-3">
-                {sectionsQ.isLoading ? (
-                  <div className="space-y-2">
-                    {Array.from({ length: 4 }, (_, i) => (
-                      <Skeleton key={i} className="h-12" />
-                    ))}
-                  </div>
-                ) : order.length === 0 ? (
-                  <EmptyState
-                    icon={<LayoutTemplate />}
-                    title="No sections yet"
-                    description="Build this page from typed content blocks."
-                    action={
-                      canWrite && (
-                        <Button size="sm" onClick={() => setAdding(true)}>
-                          <Plus className="h-4 w-4" /> Add section
-                        </Button>
-                      )
-                    }
-                  />
-                ) : (
-                  <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={onDragEnd}>
-                    <SortableContext items={order.map((s) => s.id)} strategy={verticalListSortingStrategy}>
-                      <ul className="space-y-2" aria-label="Sections in display order">
-                        {order.map((s) => (
-                          <SortableRow
-                            key={s.id}
-                            section={s}
-                            selected={s.id === selectedId}
-                            dirty={!!drafts[s.id]}
-                            canWrite={canWrite}
-                            onSelect={() => {
-                              setSelectedId(s.id);
-                              setServerErrors({});
-                            }}
-                            onToggle={(v) => toggleVisible.mutate({ s, v })}
-                          />
-                        ))}
-                      </ul>
-                    </SortableContext>
-                  </DndContext>
-                )}
-              </CardBody>
-            </Card>
+            {sectionList}
 
             {selected && draft ? (
               <div className="grid grid-cols-1 gap-5 2xl:grid-cols-2">
@@ -605,6 +626,91 @@ export default function PageEditorPage() {
             )}
           </div>
         </TabsContent>
+
+        {website && (
+          <TabsContent value="website" className="mt-5">
+            <div className="grid grid-cols-1 gap-5 xl:grid-cols-[340px_1fr]">
+              {sectionList}
+              <Card>
+                <CardHeader
+                  title={`Live website — ${website.name}`}
+                  description="The real website page. It refreshes automatically when you save, reorder, add, hide or delete a section."
+                  actions={
+                    <>
+                      <div
+                        className="flex rounded-lg border border-line p-0.5"
+                        role="group"
+                        aria-label="Preview device"
+                      >
+                        <Button
+                          size="icon"
+                          variant={device === 'desktop' ? 'primary' : 'ghost'}
+                          aria-label="Desktop"
+                          aria-pressed={device === 'desktop'}
+                          onClick={() => setDevice('desktop')}
+                        >
+                          <Monitor className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          size="icon"
+                          variant={device === 'mobile' ? 'primary' : 'ghost'}
+                          aria-label="Mobile"
+                          aria-pressed={device === 'mobile'}
+                          onClick={() => setDevice('mobile')}
+                        >
+                          <Smartphone className="h-4 w-4" />
+                        </Button>
+                      </div>
+                      {websiteUrl && (
+                        <Button asChild size="icon" variant="outline" aria-label="Open website in a new tab">
+                          <a href={websiteUrl} target="_blank" rel="noreferrer">
+                            <ExternalLink className="h-4 w-4" />
+                          </a>
+                        </Button>
+                      )}
+                    </>
+                  }
+                />
+                <CardBody className="bg-body/40">
+                  {page.status !== 'PUBLISHED' ? (
+                    <EmptyState
+                      icon={<Eye />}
+                      title="This page is not live yet"
+                      description="Websites only show published pages. Publish it to see it here and on the website."
+                      action={
+                        can(P.CONTENT_PUBLISH) && (
+                          <Button
+                            size="sm"
+                            variant="success"
+                            loading={statusAction.isPending}
+                            onClick={() => statusAction.mutate('publish')}
+                          >
+                            <Eye className="h-4 w-4" /> Publish
+                          </Button>
+                        )
+                      }
+                    />
+                  ) : (
+                    <div
+                      className={cn(
+                        'mx-auto overflow-hidden rounded-lg border border-line bg-white shadow-card transition-all',
+                        device === 'mobile' ? 'w-[390px] max-w-full' : 'w-full',
+                      )}
+                    >
+                      <iframe
+                        key={`${websiteUrl}-${device}`}
+                        src={websiteUrl ?? undefined}
+                        title={`${page.title} on ${website.name}`}
+                        className="block h-[760px] w-full"
+                        data-testid="website-preview"
+                      />
+                    </div>
+                  )}
+                </CardBody>
+              </Card>
+            </div>
+          </TabsContent>
+        )}
 
         <TabsContent value="details" className="mt-5">
           <Card>

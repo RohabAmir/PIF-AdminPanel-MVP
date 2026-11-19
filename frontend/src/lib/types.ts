@@ -12,16 +12,12 @@ export type SectionType =
   | 'TESTIMONIALS'
   | 'FAQ'
   | 'CTA'
-  | 'GALLERY';
+  | 'GALLERY'
+  | 'IMAGE_CARDS'
+  | 'LATEST_POSTS'
+  | 'FORM';
 export type SocialPlatform =
-  | 'FACEBOOK'
-  | 'INSTAGRAM'
-  | 'X'
-  | 'LINKEDIN'
-  | 'YOUTUBE'
-  | 'TIKTOK'
-  | 'SNAPCHAT'
-  | 'WHATSAPP';
+  'FACEBOOK' | 'INSTAGRAM' | 'X' | 'LINKEDIN' | 'YOUTUBE' | 'TIKTOK' | 'SNAPCHAT' | 'WHATSAPP';
 
 export interface SiteSummary {
   id: string;

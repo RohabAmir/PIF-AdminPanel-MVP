@@ -19,6 +19,44 @@ describe('section schemas', () => {
       expect.arrayContaining(['content.heading', 'content.buttonLabel', 'content.buttonUrl']),
     );
   });
+  it('keeps hero videos and coloured buttons, rejects bad colours', () => {
+    const ok = validateSectionContent(SectionType.HERO, {
+      heading: 'Tuaja',
+      backgroundVideo: '/websites/tuaja/hero.mp4',
+      buttons: [{ label: 'Eco resort', url: '/eco-resort', color: '#62BFAB' }],
+    });
+    expect(ok.value?.buttons).toEqual([
+      { label: 'Eco resort', url: '/eco-resort', color: '#62BFAB' },
+    ]);
+    const bad = validateSectionContent(SectionType.HERO, {
+      heading: 'x',
+      buttons: [{ label: 'x', color: 'green' }],
+    });
+    expect(bad.errors?.[0]?.field).toBe('content.buttons.0.color');
+  });
+  it('validates image cards, latest posts and form blocks', () => {
+    expect(validateSectionContent(SectionType.IMAGE_CARDS, { items: [] }).errors?.[0]?.field).toBe(
+      'content.items',
+    );
+    expect(validateSectionContent(SectionType.LATEST_POSTS, { heading: 'News' }).value).toEqual(
+      expect.objectContaining({ count: 3, linkLabel: '' }),
+    );
+    expect(
+      validateSectionContent(SectionType.LATEST_POSTS, { heading: 'News', count: 50 }).errors?.[0]
+        ?.field,
+    ).toBe('content.count');
+    expect(
+      validateSectionContent(SectionType.FORM, { heading: 'Contact', formKey: 'Bad Key!' })
+        .errors?.[0]?.field,
+    ).toBe('content.formKey');
+  });
+  it('defaults the gallery layout to grid and rejects unknown layouts', () => {
+    const images = [{ url: '/websites/dan/partner-1.webp' }];
+    expect(validateSectionContent(SectionType.GALLERY, { images }).value?.layout).toBe('grid');
+    expect(
+      validateSectionContent(SectionType.GALLERY, { images, layout: 'masonry' }).errors?.[0]?.field,
+    ).toBe('content.layout');
+  });
 });
 
 describe('rich text', () => {

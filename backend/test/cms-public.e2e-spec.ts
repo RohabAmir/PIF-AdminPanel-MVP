@@ -113,6 +113,30 @@ describe('CMS, public API & activity logs (e2e)', () => {
       expect(res.body.details[0].field).toBe('content.items');
     });
 
+    it('creates website blocks (form, latest posts, image cards) with normalised content', async () => {
+      const page = await ctx.prisma.page.findFirstOrThrow({
+        where: { siteId: sites.tuaja, slug: 'contact-us' },
+      });
+      const form = await as(editor, 'post', `/api/pages/${page.id}/sections`).send({
+        type: 'FORM',
+        content: { heading: 'Book a visit', formKey: 'booking-enquiry' },
+      });
+      expect(form.status).toBe(201);
+      expect(form.body.content).toMatchObject({ formKey: 'booking-enquiry', background: 'light' });
+      const posts = await as(editor, 'post', `/api/pages/${page.id}/sections`).send({
+        type: 'LATEST_POSTS',
+        content: { heading: 'News', count: 4 },
+      });
+      expect(posts.body.content).toMatchObject({ count: 4, category: '' });
+      const cards = await as(editor, 'post', `/api/pages/${page.id}/sections`).send({
+        type: 'IMAGE_CARDS',
+        content: { items: [{ title: 'Eco', image: '/websites/tuaja/exp-2.jpg', color: 'teal' }] },
+      });
+      expect(cards.status).toBe(400);
+      expect(cards.body.details[0].field).toBe('content.items.0.color');
+      await ctx.prisma.section.deleteMany({ where: { id: { in: [form.body.id, posts.body.id] } } });
+    });
+
     it('sanitises rich text and persists drag-and-drop order', async () => {
       const page = await ctx.prisma.page.findFirstOrThrow({
         where: { siteId: sites.tuaja, slug: 'about-us' },
@@ -186,7 +210,7 @@ describe('CMS, public API & activity logs (e2e)', () => {
         .get('/api/public/blogs/a-guide-to-slow-mornings')
         .set('X-API-Key', TUAJA_KEY);
       expect(live.status).toBe(200);
-      expect(live.body.seo.title).toMatch(/\| Tuaja Demo Retreats$/);
+      expect(live.body.seo.title).toMatch(/\| Tuaja Luxury Resorts$/);
     });
 
     it('filters by status and category', async () => {
@@ -220,21 +244,35 @@ describe('CMS, public API & activity logs (e2e)', () => {
       ).toBe(404);
       // Dan's pages are invisible with Tuaja's key
       expect(
-        (await request(ctx.http).get('/api/public/pages/our-projects').set('X-API-Key', TUAJA_KEY))
+        (await request(ctx.http).get('/api/public/pages/our-brands').set('X-API-Key', TUAJA_KEY))
           .status,
       ).toBe(404);
       expect(
-        (await request(ctx.http).get('/api/public/pages/our-projects').set('X-API-Key', DAN_KEY))
+        (await request(ctx.http).get('/api/public/pages/our-brands').set('X-API-Key', DAN_KEY))
           .status,
       ).toBe(200);
       const home = await request(ctx.http)
         .get('/api/public/pages/home')
         .set('X-API-Key', TUAJA_KEY);
       expect(home.body.sections.every((s: { type: string }) => !!s.type)).toBe(true);
+      // Bundled website assets come back as absolute URLs on the admin/web origin.
+      const hero = home.body.sections[0];
+      expect(hero.content.backgroundVideo).toBe(
+        `${process.env.FRONTEND_URL}/websites/tuaja/hero.mp4`,
+      );
+      expect(home.body.sections.map((s: { type: string }) => s.type)).toEqual(
+        expect.arrayContaining(['IMAGE_CARDS', 'GALLERY', 'LATEST_POSTS']),
+      );
+      // Child pages carry their parent for two-level navigation.
+      const nav = res.body.data as { id: string; slug: string; parentId: string | null }[];
+      const brand = nav.find((p) => p.slug === 'the-brand')!;
+      expect(nav.find((p) => p.slug === 'about-us')!.parentId).toBe(brand.id);
       expect(home.body.seo).toMatchObject({ robots: 'index, follow' });
       const blogs = await request(ctx.http).get('/api/public/blogs').set('X-API-Key', TUAJA_KEY);
       expect(
-        blogs.body.data.some((b: { title: string }) => /Draft|Reef diving/.test(b.title)),
+        blogs.body.data.some((b: { title: string }) =>
+          /Draft|Gallery: experience nature/.test(b.title),
+        ),
       ).toBe(false);
       expect(
         (await request(ctx.http).get('/api/public/social-links').set('X-API-Key', TUAJA_KEY)).body
@@ -243,7 +281,7 @@ describe('CMS, public API & activity logs (e2e)', () => {
       expect(
         (await request(ctx.http).get('/api/public/seo/home').set('X-API-Key', TUAJA_KEY)).body
           .title,
-      ).toBe('Eco retreats in the mountains | Tuaja Demo Retreats');
+      ).toBe('Experience nature. Heartfully. | Tuaja Luxury Resorts');
     });
 
     it('allows any origin on the public API without credentials', async () => {

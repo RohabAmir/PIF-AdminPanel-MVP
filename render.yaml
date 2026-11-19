@@ -50,6 +50,18 @@ services:
         sync: false # e.g. https://pif-admin-panel.vercel.app (served through the Vercel proxy)
       - key: CORS_ORIGINS
         sync: false # same as FRONTEND_URL
+      - key: MAIL_PROVIDER
+        sync: false # smtp | gmail | gmail-api — use gmail-api (HTTPS) if the host blocks SMTP ports
+      - key: GMAIL_APP_PASSWORD
+        sync: false
+      - key: GMAIL_USER
+        sync: false
+      - key: GMAIL_CLIENT_ID
+        sync: false
+      - key: GMAIL_CLIENT_SECRET
+        sync: false
+      - key: GMAIL_REFRESH_TOKEN
+        sync: false
       - key: SMTP_HOST
         sync: false
       - key: SMTP_PORT

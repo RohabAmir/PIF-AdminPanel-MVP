@@ -5,14 +5,28 @@ import { join } from 'node:path';
 import * as nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
 import { AppConfig } from '../config/app-config.service';
+import { GmailApiTransport } from './gmail-api.transport';
 
 type TemplateName = 'otp' | 'welcome' | 'reset-password' | 'lead-notification';
+
+/** The subset of a Nodemailer transport the service uses — also met by the Gmail API transport. */
+interface MailTransport {
+  sendMail(options: nodemailer.SendMailOptions): Promise<unknown>;
+  verify(): Promise<true>;
+}
+
+/** `"Name" <addr>` from MAIL_FROM's display name and the Gmail address (Gmail rewrites other senders). */
+export function gmailFrom(mailFrom: string, gmailUser: string): string {
+  const name = /^\s*"?([^"<]+?)"?\s*</.exec(mailFrom)?.[1]?.trim() || 'PIF Admin Panel';
+  return `"${name.replace(/"/g, '')}" <${gmailUser}>`;
+}
 
 /** Sends branded transactional emails. Returns `false` (never throws) when delivery fails. */
 @Injectable()
 export class MailService implements OnModuleInit {
   private readonly logger = new Logger(MailService.name);
-  private transporter: Transporter | null = null;
+  private transporter: MailTransport | null = null;
+  private from = '';
   private layout!: Handlebars.TemplateDelegate;
   private readonly templates = new Map<TemplateName, Handlebars.TemplateDelegate>();
 
@@ -24,24 +38,62 @@ export class MailService implements OnModuleInit {
     for (const name of ['otp', 'welcome', 'reset-password', 'lead-notification'] as const) {
       this.templates.set(name, Handlebars.compile(readFileSync(join(dir, `${name}.hbs`), 'utf8')));
     }
-    const host = this.config.get('SMTP_HOST');
-    if (host) {
-      const user = this.config.get('SMTP_USER');
-      this.transporter = nodemailer.createTransport({
-        host,
-        port: this.config.get('SMTP_PORT'),
-        secure: this.config.get('SMTP_SECURE'),
-        auth: user ? { user, pass: this.config.get('SMTP_PASS') } : undefined,
-        connectionTimeout: 10_000,
-        greetingTimeout: 10_000,
-      });
-    } else {
-      this.logger.warn('SMTP_HOST is not set — emails will not be delivered.');
+    this.transporter = this.createTransport();
+    if (this.transporter) this.logger.log(`Email delivery via ${this.provider}`);
+    else this.logger.warn('SMTP_HOST is not set — emails will not be delivered.');
+  }
+
+  get provider(): string {
+    const p = this.config.get('MAIL_PROVIDER');
+    return p === 'smtp'
+      ? `SMTP ${this.config.get('SMTP_HOST')}`
+      : `${p} (${this.config.get('GMAIL_USER')})`;
+  }
+
+  private createTransport(): MailTransport | null {
+    const provider = this.config.get('MAIL_PROVIDER');
+    const mailFrom = this.config.get('MAIL_FROM');
+    const timeouts = { connectionTimeout: 10_000, greetingTimeout: 10_000, socketTimeout: 20_000 };
+    if (provider === 'gmail') {
+      const user = this.config.get('GMAIL_USER');
+      this.from = gmailFrom(mailFrom, user);
+      return nodemailer.createTransport({
+        service: 'gmail', // smtp.gmail.com:465, TLS
+        auth: { user, pass: this.config.get('GMAIL_APP_PASSWORD').replace(/\s+/g, '') },
+        ...timeouts,
+      }) as Transporter as MailTransport;
     }
+    if (provider === 'gmail-api') {
+      const user = this.config.get('GMAIL_USER');
+      this.from = gmailFrom(mailFrom, user);
+      return new GmailApiTransport({
+        user,
+        clientId: this.config.get('GMAIL_CLIENT_ID'),
+        clientSecret: this.config.get('GMAIL_CLIENT_SECRET'),
+        refreshToken: this.config.get('GMAIL_REFRESH_TOKEN'),
+      });
+    }
+    const host = this.config.get('SMTP_HOST');
+    if (!host) return null;
+    this.from = mailFrom;
+    const user = this.config.get('SMTP_USER');
+    return nodemailer.createTransport({
+      host,
+      port: this.config.get('SMTP_PORT'),
+      secure: this.config.get('SMTP_SECURE'),
+      auth: user ? { user, pass: this.config.get('SMTP_PASS') } : undefined,
+      ...timeouts,
+    }) as Transporter as MailTransport;
   }
 
   get enabled(): boolean {
     return this.transporter !== null;
+  }
+
+  /** Checks the connection/credentials without sending anything. */
+  async verify(): Promise<void> {
+    if (!this.transporter) throw new Error('Email delivery is not configured.');
+    await this.transporter.verify();
   }
 
   render(template: TemplateName, subject: string, data: Record<string, unknown>): string {
@@ -63,7 +115,7 @@ export class MailService implements OnModuleInit {
     if (!this.transporter) return false;
     try {
       await this.transporter.sendMail({
-        from: this.config.get('MAIL_FROM'),
+        from: this.from,
         to,
         subject,
         html: this.render(template, subject, data),

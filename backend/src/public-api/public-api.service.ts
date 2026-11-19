@@ -29,11 +29,19 @@ export class PublicApiService {
     private readonly audit: AuditService,
   ) {}
 
-  /** Uploaded files are stored as `/uploads/...`; external consumers need absolute URLs. */
+  /**
+   * Uploaded files are stored as `/uploads/...` (served by the API) and bundled website
+   * assets as `/websites/...` (served by the admin app); external consumers need absolute URLs.
+   */
   private abs<T>(value: T): T {
-    const base = this.config.get('API_PUBLIC_URL').replace(/\/$/, '');
+    const api = this.config.get('API_PUBLIC_URL').replace(/\/$/, '');
+    const web = this.config.get('FRONTEND_URL').replace(/\/$/, '');
     const walk = (v: unknown): unknown => {
-      if (typeof v === 'string') return v.startsWith('/uploads/') ? `${base}${v}` : v;
+      if (typeof v === 'string') {
+        if (v.startsWith('/uploads/')) return `${api}${v}`;
+        if (/^\/websites\/[^/\s]+\/[^\s]+\.[a-z0-9]{2,5}$/i.test(v)) return `${web}${v}`;
+        return v;
+      }
       if (Array.isArray(v)) return v.map(walk);
       if (v && typeof v === 'object' && !(v instanceof Date)) {
         return Object.fromEntries(Object.entries(v).map(([k, x]) => [k, walk(x)]));

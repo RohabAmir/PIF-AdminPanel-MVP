@@ -27,6 +27,40 @@ export const envValidationSchema = Joi.object({
   GLOBAL_RATE_LIMIT: Joi.number().integer().min(10).default(300),
   PUBLIC_FORM_RATE_LIMIT: Joi.number().integer().min(1).default(10),
 
+  // smtp = any SMTP server (Mailpit locally) · gmail = Gmail SMTP with an app password ·
+  // gmail-api = Gmail REST API over HTTPS with OAuth2 (for hosts that block SMTP ports)
+  MAIL_PROVIDER: Joi.string().valid('smtp', 'gmail', 'gmail-api').default('smtp'),
+  GMAIL_USER: Joi.when('MAIL_PROVIDER', {
+    is: Joi.valid('gmail', 'gmail-api'),
+    then: Joi.string().email().required(),
+    otherwise: Joi.string().allow('').default(''),
+  }),
+  GMAIL_APP_PASSWORD: Joi.when('MAIL_PROVIDER', {
+    is: 'gmail',
+    then: Joi.string()
+      .replace(/\s+/g, '')
+      .length(16)
+      .required()
+      .messages({
+        'string.length': 'GMAIL_APP_PASSWORD must be the 16-character Google app password',
+      }),
+    otherwise: Joi.string().allow('').default(''),
+  }),
+  GMAIL_CLIENT_ID: Joi.when('MAIL_PROVIDER', {
+    is: 'gmail-api',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow('').default(''),
+  }),
+  GMAIL_CLIENT_SECRET: Joi.when('MAIL_PROVIDER', {
+    is: 'gmail-api',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow('').default(''),
+  }),
+  GMAIL_REFRESH_TOKEN: Joi.when('MAIL_PROVIDER', {
+    is: 'gmail-api',
+    then: Joi.string().required(),
+    otherwise: Joi.string().allow('').default(''),
+  }),
   SMTP_HOST: Joi.string().allow('').default(''),
   SMTP_PORT: Joi.number().port().default(1025),
   SMTP_SECURE: Joi.boolean().default(false),
@@ -65,6 +99,12 @@ export interface AppEnv {
   AUTH_RATE_LIMIT: number;
   GLOBAL_RATE_LIMIT: number;
   PUBLIC_FORM_RATE_LIMIT: number;
+  MAIL_PROVIDER: 'smtp' | 'gmail' | 'gmail-api';
+  GMAIL_USER: string;
+  GMAIL_APP_PASSWORD: string;
+  GMAIL_CLIENT_ID: string;
+  GMAIL_CLIENT_SECRET: string;
+  GMAIL_REFRESH_TOKEN: string;
   SMTP_HOST: string;
   SMTP_PORT: number;
   SMTP_SECURE: boolean;
