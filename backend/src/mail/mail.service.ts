@@ -48,8 +48,22 @@ export class MailService implements OnModuleInit {
       this.templates.set(name, Handlebars.compile(readFileSync(join(dir, `${name}.hbs`), 'utf8')));
     }
     this.transporter = this.createTransport();
-    if (this.transporter) this.logger.log(`Email delivery via ${this.provider}`);
-    else this.logger.warn('SMTP_HOST is not set — emails will not be delivered.');
+    if (this.transporter) {
+      this.logger.log(`Email delivery via ${this.provider}`);
+      // Non-blocking connectivity check so a misconfigured or blocked mail server shows up in the logs at boot.
+      if (process.env.NODE_ENV !== 'test') {
+        this.transporter
+          .verify()
+          .catch((err: Error) =>
+            this.logger.error(
+              `Email provider check failed: ${err.message}.` +
+                (this.config.get('MAIL_PROVIDER') === 'gmail-api'
+                  ? ''
+                  : ' If the host blocks SMTP ports (Render free plan does), use MAIL_PROVIDER=gmail-api.'),
+            ),
+          );
+      }
+    } else this.logger.warn('SMTP_HOST is not set — emails will not be delivered.');
   }
 
   get provider(): string {

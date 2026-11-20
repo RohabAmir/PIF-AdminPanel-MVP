@@ -20,6 +20,7 @@
     "db:reset": "prisma migrate reset --force",
     "postinstall": "prisma generate",
     "mail:test": "ts-node --transpile-only scripts/mail-test.ts",
+    "gmail:auth": "ts-node --transpile-only scripts/gmail-auth.ts",
     "db:seed:websites": "SEED_RESET_WEBSITES=true prisma db seed"
   },
   "license": "MIT",
