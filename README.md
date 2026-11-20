@@ -1,6 +1,7 @@
 # PIF Admin Panel
 
 [![CI](https://github.com/RohabAmir/PIF-AdminPanel-MVP/actions/workflows/ci.yml/badge.svg)](https://github.com/RohabAmir/PIF-AdminPanel-MVP/actions/workflows/ci.yml)
+[![Deploy](https://github.com/RohabAmir/PIF-AdminPanel-MVP/actions/workflows/deploy.yml/badge.svg)](https://github.com/RohabAmir/PIF-AdminPanel-MVP/actions/workflows/deploy.yml)
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
 ![NestJS](https://img.shields.io/badge/NestJS-11-E0234E?logo=nestjs&logoColor=white)
@@ -21,7 +22,7 @@ A production-grade, **multi-tenant CMS admin panel**: one dashboard to manage th
 - 📧 **Real email via Gmail** — welcome emails (with temporary password) and sign-in codes land in real Gmail inboxes, via Gmail SMTP + app password or the Gmail API over HTTPS.
 - 🌐 **Public content API** — API-key authenticated, CORS-open, cached; form submissions create leads (honeypot + rate limit). Try it in the built-in **API Playground** or the static `demo-site.html`.
 - 📜 **Activity logs** — every mutating action with actor, role at the time, website, before/after diff, IP, user agent and request id; filters + CSV export; append-only.
-- ✅ **Quality** — TypeScript strict, 33 backend unit + 66 backend e2e tests (real Postgres), 21 frontend tests, 4 Playwright browser tests (incl. live website updates), ESLint/Prettier, Husky, CI/CD with GitHub Actions → Render + Vercel.
+- ✅ **Quality** — TypeScript strict, 34 backend unit + 66 backend e2e tests (real Postgres), 21 frontend tests, 4 Playwright browser tests (incl. live website updates), ESLint/Prettier, Husky, CI/CD with GitHub Actions → Render + Vercel.
 
 ## Screenshots
 
@@ -126,6 +127,36 @@ flowchart LR
 ```
 
 Details: [ARCHITECTURE.md](docs/ARCHITECTURE.md) (request lifecycle, tenant isolation, auth sequence, ERD) · [RBAC.md](docs/RBAC.md) · [API.md](docs/API.md) (and Swagger at `/api/docs`) · [CI-CD-GUIDE.md](docs/CI-CD-GUIDE.md) · [DECISIONS.md](docs/DECISIONS.md) · [DESIGN-TOKENS.md](docs/DESIGN-TOKENS.md).
+
+## CI/CD pipeline
+
+Every change goes through the same automated path — nobody deploys from a laptop.
+
+```mermaid
+flowchart LR
+  F[feature branch] -- PR --> D[development]
+  D -- PR --> M[main]
+  F & D & M -. every push / PR .-> CI
+  subgraph CI [GitHub Actions · ci.yml]
+    B[Backend<br/>lint · typecheck · unit<br/>e2e on Postgres 16 · build]
+    W[Frontend<br/>lint · typecheck · Vitest · build]
+    P[Playwright<br/>full browser journey]
+    B & W --> P
+  end
+  M -- CI green --> CD
+  subgraph CD [GitHub Actions · deploy.yml]
+    R[Render deploy hook<br/>migrate + start API] --> H[wait for /api/health] --> V[Vercel production] --> S[smoke check]
+  end
+```
+
+| Stage                                                    | Trigger                                 | What runs                                                                                                                                                                                                           |
+| -------------------------------------------------------- | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CI** ([ci.yml](.github/workflows/ci.yml))              | every push and pull request, any branch | backend lint, typecheck, unit tests, API e2e tests against a real PostgreSQL service container, build · frontend lint, typecheck, Vitest, build · Playwright browser tests on the built app with Postgres + Mailpit |
+| **Preview** ([deploy.yml](.github/workflows/deploy.yml)) | pull request into `main`                | Vercel preview deployment, URL commented on the PR                                                                                                                                                                  |
+| **CD** ([deploy.yml](.github/workflows/deploy.yml))      | CI succeeds on `main`                   | Render deploy (API + migrations) → health check → Vercel production deploy → smoke check on the live URLs                                                                                                           |
+| **Local gate**                                           | every commit                            | Husky + lint-staged run ESLint and Prettier on staged files                                                                                                                                                         |
+
+Branches: work happens on feature branches, is merged into **`development`** for integration, and **`development` → `main`** releases to production. `main` is protected by the CI status checks. Proof of every run — logs, timings, test output, artifacts — is public in the [Actions tab](https://github.com/RohabAmir/PIF-AdminPanel-MVP/actions). Production deploys are switched on with the repository variable `DEPLOY_ENABLED=true`. Full walkthrough: [CI-CD-GUIDE.md](docs/CI-CD-GUIDE.md).
 
 ## Tech stack
 
