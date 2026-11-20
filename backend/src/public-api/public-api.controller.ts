@@ -45,7 +45,12 @@ export class SubmitFormDto {
   _hp?: string;
 }
 
-const CACHE = 'public, max-age=60, stale-while-revalidate=300';
+/**
+ * Every tenant requests the same URLs and is told apart only by X-API-Key, so shared caches (CDNs)
+ * must not store these responses: they would serve one website's content to another and delay edits.
+ * `private, no-cache` lets the browser keep a copy but revalidate each time (cheap 304 via ETag).
+ */
+const CACHE = 'private, no-cache';
 
 @ApiTags('Public content API')
 @ApiSecurity('api-key')

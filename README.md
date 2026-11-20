@@ -90,7 +90,7 @@ Images live in `frontend/public/websites/<site>/`; the hero videos are 20-second
 
 By default emails go to the local Mailpit inbox. To deliver **welcome emails** (new users get their temporary password) and **sign-in codes** to real Gmail inboxes, pick one provider in `backend/.env`:
 
-**Option A — Gmail SMTP with an app password (simplest)**
+**Option A — Gmail SMTP with an app password (local development)**
 
 1. On the sending Google account enable **2-Step Verification**, then create an **App password** (Google Account → Security → App passwords).
 2. Set:
@@ -101,11 +101,18 @@ By default emails go to the local Mailpit inbox. To deliver **welcome emails** (
    MAIL_FROM="PIF Admin Panel <your.account@gmail.com>"
    ```
 
-**Option B — Gmail API over HTTPS (for hosts that block SMTP ports)**
+**Option B — Gmail API over HTTPS (production: Render's free plan blocks SMTP ports 25/465/587)**
 
-1. In Google Cloud: enable the **Gmail API**, create an **OAuth client (Web)**, add `https://developers.google.com/oauthplayground` as a redirect URI.
-2. In the [OAuth Playground](https://developers.google.com/oauthplayground) (⚙ → use your own client), authorise scope `https://www.googleapis.com/auth/gmail.send` as the sending account and exchange for a **refresh token**.
-3. Set `MAIL_PROVIDER=gmail-api`, `GMAIL_USER`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN`.
+1. In [Google Cloud Console](https://console.cloud.google.com/): create a project and enable the **Gmail API**.
+2. **OAuth consent screen** → External → fill in the app name and your email → **Publish app** (in "Testing" mode refresh tokens expire after 7 days).
+3. **Credentials → Create credentials → OAuth client ID → Desktop app**; copy the client ID and secret.
+4. Run the helper — it opens Google sign-in, verifies access and prints the variables to set:
+   ```bash
+   npm --prefix backend run gmail:auth -- <client-id> <client-secret>
+   ```
+5. Set `MAIL_PROVIDER=gmail-api`, `GMAIL_USER`, `GMAIL_CLIENT_ID`, `GMAIL_CLIENT_SECRET`, `GMAIL_REFRESH_TOKEN` (and `MAIL_FROM`) on the server.
+
+At boot the API checks the mail provider and logs a clear error if it cannot connect.
 
 Verify either setup — it checks the credentials and sends a real test email:
 
