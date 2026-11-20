@@ -4,7 +4,7 @@ Interactive OpenAPI docs: **`/api/docs`** (Swagger UI) — e.g. http://localhost
 
 - Base path: `/api`. JSON in/out. Times are ISO-8601 UTC.
 - Admin endpoints: `Authorization: Bearer <accessToken>`; CMS endpoints also need `X-Site-Id: <website uuid>`.
-- Public content endpoints: `X-API-Key: <website key>`; CORS open; `Cache-Control: public, max-age=60`.
+- Public content endpoints: `X-API-Key: <website key>`; CORS open; `Cache-Control: private, no-cache` + `Vary: X-API-Key` (tenants share URLs, so CDNs must not cache; browsers revalidate cheaply via ETag/304). All other API responses are `no-store`.
 - Lists return `{ data, meta: { page, pageSize, total, totalPages } }` and accept `page`, `pageSize` (≤100), `search`, `sortBy`, `sortOrder`.
 - Errors return `{ statusCode, error, message, details?, requestId }`; validation errors put `[{ field, errors[] }]` in `details`.
 

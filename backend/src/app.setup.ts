@@ -39,6 +39,20 @@ export function configureApp(app: NestExpressApplication): INestApplication {
     }),
   );
   app.use(cookieParser());
+  // API responses depend on the caller (session cookie or X-API-Key), so CDNs in front of the API
+  // (Vercel's proxy, Cloudflare at Render) must never share them. Routes may opt into browser caching.
+  app.use(
+    '/api',
+    (
+      _req: unknown,
+      res: { setHeader(k: string, v: string): void; vary(f: string): void },
+      next: () => void,
+    ) => {
+      res.setHeader('Cache-Control', 'no-store');
+      res.vary('X-API-Key');
+      next();
+    },
+  );
 
   const allowList = config.corsOrigins;
   app.enableCors((req: { url?: string; headers: { origin?: string } }, cb) => {

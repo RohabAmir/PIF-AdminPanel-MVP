@@ -235,7 +235,17 @@ describe('CMS, public API & activity logs (e2e)', () => {
     it('returns only published content of the key’s own site, with visible sections and caching headers', async () => {
       const res = await request(ctx.http).get('/api/public/pages').set('X-API-Key', TUAJA_KEY);
       expect(res.status).toBe(200);
-      expect(res.headers['cache-control']).toMatch(/max-age=60/);
+      // Same URL for every tenant: shared caches must not store it, and must key on the API key.
+      expect(res.headers['cache-control']).toBe('private, no-cache');
+      expect(res.headers['vary']).toMatch(/X-API-Key/i);
+      expect(res.headers['etag']).toBeTruthy();
+      const again = await request(ctx.http)
+        .get('/api/public/pages')
+        .set('X-API-Key', TUAJA_KEY)
+        .set('If-None-Match', res.headers['etag'] as string);
+      expect(again.status).toBe(304);
+      // Authenticated API responses are never cacheable.
+      expect((await request(ctx.http).get('/api/sites')).headers['cache-control']).toBe('no-store');
       const slugs = res.body.data.map((p: { slug: string }) => p.slug);
       expect(slugs).not.toContain('careers');
       expect(
