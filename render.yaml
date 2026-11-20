@@ -4,6 +4,7 @@
 databases:
   - name: pif-admin-db
     plan: free
+    region: frankfurt # must match the API's region: the internal hostname only resolves within one region
     databaseName: pif_admin
     user: pif
     postgresMajorVersion: '16'
