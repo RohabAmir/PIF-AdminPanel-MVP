@@ -15,7 +15,8 @@ services:
     plan: free
     region: frankfurt
     rootDir: backend
-    buildCommand: npm ci && npx prisma generate && npm run build
+    # NODE_ENV=production makes npm skip devDependencies, but the Nest CLI and TypeScript are needed to build.
+    buildCommand: npm ci --include=dev && npx prisma generate && npm run build
     # The free plan has no pre-deploy step, so migrations run at start (idempotent).
     startCommand: npx prisma migrate deploy && node dist/main
     healthCheckPath: /api/health
