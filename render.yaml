@@ -16,8 +16,7 @@ services:
     region: frankfurt
     rootDir: backend
     buildCommand: npm ci && npx prisma generate && npm run build
-    preDeployCommand: npx prisma migrate deploy
-    # The free plan has no pre-deploy step, so migrations also run at start (idempotent).
+    # The free plan has no pre-deploy step, so migrations run at start (idempotent).
     startCommand: npx prisma migrate deploy && node dist/main
     healthCheckPath: /api/health
     autoDeploy: false # deploys are triggered by GitHub Actions only after CI passes
