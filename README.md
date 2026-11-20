@@ -10,6 +10,8 @@
 
 A production-grade, **multi-tenant CMS admin panel**: one dashboard to manage the pages, typed content blocks, blogs, forms, leads, SEO, media and social links of **any number of websites** — with two-factor login, role-based access, per-website isolation, a public content API and a complete audit trail.
 
+**🔗 Live demo: [pif-admin-panel.vercel.app](https://pif-admin-panel.vercel.app)** · tenant websites: [/websites/tuaja](https://pif-admin-panel.vercel.app/websites/tuaja) · [/websites/dan](https://pif-admin-panel.vercel.app/websites/dan)
+
 ![Dashboard](docs/screenshots/dashboard.png)
 
 ## Highlights
