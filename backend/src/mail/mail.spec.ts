@@ -1,5 +1,5 @@
 import { GmailApiTransport } from './gmail-api.transport';
-import { gmailFrom } from './mail.service';
+import { gmailFrom, MailService } from './mail.service';
 
 const json = (status: number, body: unknown) =>
   ({ ok: status < 400, status, json: async () => body }) as Response;
@@ -65,5 +65,30 @@ describe('GmailApiTransport', () => {
     await expect(
       new GmailApiTransport(creds, badSend as unknown as typeof fetch).sendMail({ to: 'a@b.c' }),
     ).rejects.toThrow('Insufficient Permission');
+  });
+});
+
+describe('MailService logo', () => {
+  it('embeds the logo as an inline attachment referenced by cid', async () => {
+    const env: Record<string, unknown> = {
+      MAIL_PROVIDER: 'smtp',
+      SMTP_HOST: 'localhost',
+      SMTP_PORT: 1025,
+      SMTP_SECURE: false,
+      SMTP_USER: '',
+      MAIL_FROM: 'PIF <a@b.c>',
+      FRONTEND_URL: 'http://localhost:5173',
+    };
+    const svc = new MailService({ get: (k: string) => env[k] } as never);
+    svc.onModuleInit();
+    const sendMail = jest.fn().mockResolvedValue({});
+    (svc as unknown as { transporter: unknown }).transporter = { sendMail, verify: jest.fn() };
+
+    expect(await svc.send('x@y.z', 'Hi', 'otp', { code: '123456', minutes: 10 })).toBe(true);
+    const opts = sendMail.mock.calls[0][0];
+    expect(opts.html).toContain('src="cid:logo@pif-admin"');
+    expect(opts.html).not.toContain('localhost');
+    expect(opts.attachments[0]).toMatchObject({ cid: 'logo@pif-admin', contentType: 'image/png' });
+    expect(opts.attachments[0].content.length).toBeGreaterThan(1000);
   });
 });

@@ -7,6 +7,9 @@ import type { Transporter } from 'nodemailer';
 import { AppConfig } from '../config/app-config.service';
 import { GmailApiTransport } from './gmail-api.transport';
 
+const LOGO_FILE = 'email-logo.png';
+const LOGO_CID = 'logo@pif-admin';
+
 type TemplateName = 'otp' | 'welcome' | 'reset-password' | 'lead-notification';
 
 /** The subset of a Nodemailer transport the service uses — also met by the Gmail API transport. */
@@ -28,6 +31,7 @@ export class MailService implements OnModuleInit {
   private transporter: MailTransport | null = null;
   private from = '';
   private layout!: Handlebars.TemplateDelegate;
+  private logo: Buffer | null = null;
   private readonly templates = new Map<TemplateName, Handlebars.TemplateDelegate>();
 
   constructor(private readonly config: AppConfig) {}
@@ -35,6 +39,11 @@ export class MailService implements OnModuleInit {
   onModuleInit(): void {
     const dir = join(__dirname, 'templates');
     this.layout = Handlebars.compile(readFileSync(join(dir, 'layout.hbs'), 'utf8'));
+    try {
+      this.logo = readFileSync(join(dir, LOGO_FILE));
+    } catch {
+      this.logger.warn(`${LOGO_FILE} not found — emails will link the logo from FRONTEND_URL.`);
+    }
     for (const name of ['otp', 'welcome', 'reset-password', 'lead-notification'] as const) {
       this.templates.set(name, Handlebars.compile(readFileSync(join(dir, `${name}.hbs`), 'utf8')));
     }
@@ -102,7 +111,10 @@ export class MailService implements OnModuleInit {
       subject,
       body,
       year: new Date().getFullYear(),
-      logoUrl: `${this.config.get('FRONTEND_URL')}/brand/email-logo.png`,
+      // Embedded as an inline attachment so it shows even when FRONTEND_URL is not public (localhost).
+      logoUrl: this.logo
+        ? `cid:${LOGO_CID}`
+        : `${this.config.get('FRONTEND_URL')}/brand/email-logo.png`,
     });
   }
 
@@ -119,6 +131,17 @@ export class MailService implements OnModuleInit {
         to,
         subject,
         html: this.render(template, subject, data),
+        attachments: this.logo
+          ? [
+              {
+                filename: LOGO_FILE,
+                content: this.logo,
+                contentType: 'image/png',
+                cid: LOGO_CID,
+                contentDisposition: 'inline',
+              },
+            ]
+          : undefined,
       });
       this.logger.log({ template, to: to.replace(/(.{2}).*@/, '$1***@') }, 'Email sent');
       return true;
