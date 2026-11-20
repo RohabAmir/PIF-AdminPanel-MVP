@@ -2,11 +2,11 @@ import * as Joi from 'joi';
 
 export const envValidationSchema = Joi.object({
   NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
-  PORT: Joi.number().port().default(3000),
+  PORT: Joi.number().empty('').port().default(3000),
   LOG_LEVEL: Joi.string()
     .valid('fatal', 'error', 'warn', 'info', 'debug', 'trace', 'silent')
     .default('info'),
-  TRUST_PROXY: Joi.number().integer().min(0).default(1),
+  TRUST_PROXY: Joi.number().empty('').integer().min(0).default(1),
 
   DATABASE_URL: Joi.string()
     .uri({ scheme: ['postgresql', 'postgres'] })
@@ -18,14 +18,14 @@ export const envValidationSchema = Joi.object({
   JWT_ACCESS_SECRET: Joi.string().min(32).required(),
   JWT_OTP_SECRET: Joi.string().min(32).required(),
   JWT_ACCESS_TTL: Joi.string().default('15m'),
-  REFRESH_TOKEN_TTL_DAYS: Joi.number().integer().min(1).max(90).default(7),
-  REFRESH_REUSE_GRACE_SECONDS: Joi.number().integer().min(0).max(60).default(10),
-  BCRYPT_ROUNDS: Joi.number().integer().min(4).max(15).default(12),
-  COOKIE_SECURE: Joi.boolean().default(false),
+  REFRESH_TOKEN_TTL_DAYS: Joi.number().empty('').integer().min(1).max(90).default(7),
+  REFRESH_REUSE_GRACE_SECONDS: Joi.number().empty('').integer().min(0).max(60).default(10),
+  BCRYPT_ROUNDS: Joi.number().empty('').integer().min(4).max(15).default(12),
+  COOKIE_SECURE: Joi.boolean().empty('').default(false),
   COOKIE_SAMESITE: Joi.string().valid('lax', 'strict', 'none').default('lax'),
-  AUTH_RATE_LIMIT: Joi.number().integer().min(1).default(10),
-  GLOBAL_RATE_LIMIT: Joi.number().integer().min(10).default(300),
-  PUBLIC_FORM_RATE_LIMIT: Joi.number().integer().min(1).default(10),
+  AUTH_RATE_LIMIT: Joi.number().empty('').integer().min(1).default(10),
+  GLOBAL_RATE_LIMIT: Joi.number().empty('').integer().min(10).default(300),
+  PUBLIC_FORM_RATE_LIMIT: Joi.number().empty('').integer().min(1).default(10),
 
   // smtp = any SMTP server (Mailpit locally) · gmail = Gmail SMTP with an app password ·
   // gmail-api = Gmail REST API over HTTPS with OAuth2 (for hosts that block SMTP ports)
@@ -37,13 +37,9 @@ export const envValidationSchema = Joi.object({
   }),
   GMAIL_APP_PASSWORD: Joi.when('MAIL_PROVIDER', {
     is: 'gmail',
-    then: Joi.string()
-      .replace(/\s+/g, '')
-      .length(16)
-      .required()
-      .messages({
-        'string.length': 'GMAIL_APP_PASSWORD must be the 16-character Google app password',
-      }),
+    then: Joi.string().replace(/\s+/g, '').length(16).required().messages({
+      'string.length': 'GMAIL_APP_PASSWORD must be the 16-character Google app password',
+    }),
     otherwise: Joi.string().allow('').default(''),
   }),
   GMAIL_CLIENT_ID: Joi.when('MAIL_PROVIDER', {
@@ -62,18 +58,18 @@ export const envValidationSchema = Joi.object({
     otherwise: Joi.string().allow('').default(''),
   }),
   SMTP_HOST: Joi.string().allow('').default(''),
-  SMTP_PORT: Joi.number().port().default(1025),
-  SMTP_SECURE: Joi.boolean().default(false),
+  SMTP_PORT: Joi.number().empty('').port().default(1025),
+  SMTP_SECURE: Joi.boolean().empty('').default(false),
   SMTP_USER: Joi.string().allow('').default(''),
   SMTP_PASS: Joi.string().allow('').default(''),
   MAIL_FROM: Joi.string().default('PIF Admin Panel <no-reply@pifdemo.com>'),
 
-  DEMO_MODE: Joi.boolean().default(false),
+  DEMO_MODE: Joi.boolean().empty('').default(false),
   DEMO_PASSWORD: Joi.string().default('Demo@12345'),
 
   MEDIA_DRIVER: Joi.string().valid('local', 'cloudinary', 'url').default('local'),
   UPLOAD_DIR: Joi.string().default('uploads'),
-  MAX_UPLOAD_MB: Joi.number().min(1).max(20).default(5),
+  MAX_UPLOAD_MB: Joi.number().empty('').min(1).max(20).default(5),
   CLOUDINARY_CLOUD_NAME: Joi.string().allow('').default(''),
   CLOUDINARY_API_KEY: Joi.string().allow('').default(''),
   CLOUDINARY_API_SECRET: Joi.string().allow('').default(''),

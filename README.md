@@ -24,7 +24,7 @@ A production-grade, **multi-tenant CMS admin panel**: one dashboard to manage th
 - 📧 **Real email via Gmail** — welcome emails (with temporary password) and sign-in codes land in real Gmail inboxes, via Gmail SMTP + app password or the Gmail API over HTTPS.
 - 🌐 **Public content API** — API-key authenticated, CORS-open, cached; form submissions create leads (honeypot + rate limit). Try it in the built-in **API Playground** or the static `demo-site.html`.
 - 📜 **Activity logs** — every mutating action with actor, role at the time, website, before/after diff, IP, user agent and request id; filters + CSV export; append-only.
-- ✅ **Quality** — TypeScript strict, 34 backend unit + 66 backend e2e tests (real Postgres), 21 frontend tests, 4 Playwright browser tests (incl. live website updates), ESLint/Prettier, Husky, CI/CD with GitHub Actions → Render + Vercel.
+- ✅ **Quality** — TypeScript strict, 36 backend unit + 66 backend e2e tests (real Postgres), 21 frontend tests, 4 Playwright browser tests (incl. live website updates), ESLint/Prettier, Husky, CI/CD with GitHub Actions → Render + Vercel.
 
 ## Screenshots
 
