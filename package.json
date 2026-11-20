@@ -31,7 +31,7 @@
     "concurrently": "^9.2.5",
     "embedded-postgres": "^16.15.0-beta.19",
     "husky": "^9.1.7",
-    "lint-staged": "^15.5.2",
+    "lint-staged": "^17.6.1",
     "mailparser": "^3.14.5",
     "prettier": "^3.10.1",
     "smtp-server": "^3.21.6",
