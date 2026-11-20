@@ -35,6 +35,6 @@
     "mailparser": "^3.14.5",
     "prettier": "^3.10.1",
     "smtp-server": "^3.21.6",
-    "wait-on": "^8.0.5"
+    "wait-on": "^9.5.1"
   }
 }
