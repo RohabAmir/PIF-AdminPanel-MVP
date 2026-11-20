@@ -2,20 +2,16 @@
  * Idempotent demo seed: safe to run repeatedly. Users and websites are upserted;
  * content is only created for websites that have no pages yet; activity logs only
  * when the log table is empty.
+ *
+ * SEED_RESET_WEBSITES=true rebuilds the website content (pages, sections, blogs,
+ * categories, social links, media, SEO settings) of the two demo sites from
+ * seed-websites.ts, keeping users, forms, leads and activity logs.
  */
 import { BlogStatus, Prisma, PrismaClient, Role, UserStatus } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 import { createHash } from 'node:crypto';
-import {
-  DAN,
-  FORMS,
-  IMAGES,
-  LEAD_MESSAGES,
-  LEAD_PEOPLE,
-  LEAD_STATUS_POOL,
-  SeedSite,
-  TUAJA,
-} from './seed-data';
+import { FORMS, LEAD_MESSAGES, LEAD_PEOPLE, LEAD_STATUS_POOL, SeedSite } from './seed-data';
+import { DAN, TUAJA } from './seed-websites';
 
 const prisma = new PrismaClient();
 const sha256 = (v: string) => createHash('sha256').update(v).digest('hex');
@@ -47,26 +43,45 @@ async function upsertSite(s: SeedSite) {
       defaultLanguage: 'en',
       apiKeyHash: sha256(apiKey),
       apiKeyPrefix: apiKey.split('_').slice(0, 2).join('_'),
-      seoSetting: {
-        create: {
-          ...s.seo,
-          robotsTxt: 'User-agent: *\nAllow: /\nSitemap: ' + s.seo.canonicalBaseUrl + '/sitemap.xml',
-        },
-      },
+      seoSetting: { create: seoData(s) },
     },
   });
 }
 
-async function seedContent(siteId: string, s: SeedSite, authors: Record<string, string>) {
-  if ((await prisma.page.count({ where: { siteId } })) > 0) return false;
+const seoData = (s: SeedSite) => ({
+  ...s.seo,
+  robotsTxt: 'User-agent: *\nAllow: /\nSitemap: ' + s.seo.canonicalBaseUrl + '/sitemap.xml',
+});
 
+/** Deletes a demo site's website content so it can be rebuilt. Forms and leads are kept. */
+async function resetWebsite(siteId: string, s: SeedSite) {
+  await prisma.$transaction([
+    prisma.page.updateMany({ where: { siteId }, data: { parentId: null } }),
+    prisma.page.deleteMany({ where: { siteId } }), // sections cascade
+    prisma.blogPost.deleteMany({ where: { siteId } }),
+    prisma.blogCategory.deleteMany({ where: { siteId } }),
+    prisma.socialLink.deleteMany({ where: { siteId } }),
+    prisma.mediaAsset.deleteMany({ where: { siteId } }),
+    prisma.seoSetting.upsert({
+      where: { siteId },
+      update: seoData(s),
+      create: { siteId, ...seoData(s) },
+    }),
+    prisma.site.update({ where: { id: siteId }, data: { primaryColor: s.primaryColor } }),
+  ]);
+}
+
+/** Pages + sections, blogs, social links and media library of one website. */
+async function seedWebsite(siteId: string, s: SeedSite, authors: Record<string, string>) {
+  const ids = new Map<string, string>();
   for (const [order, p] of s.pages.entries()) {
-    await prisma.page.create({
+    const page = await prisma.page.create({
       data: {
         siteId,
         title: p.title,
         slug: p.slug,
         status: p.status,
+        parentId: p.parent ? ids.get(p.parent) : undefined,
         order,
         seo: (p.seo ?? {}) as Prisma.InputJsonValue,
         publishedAt: p.status === 'PUBLISHED' ? new Date(Date.now() - (30 - order) * DAY) : null,
@@ -83,6 +98,7 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
         },
       },
     });
+    ids.set(p.slug, page.id);
   }
 
   const categories = new Map<string, string>();
@@ -91,9 +107,7 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
     categories.set(name, c.id);
   }
   for (const b of s.blogs) {
-    const html =
-      b.paragraphs.map((p) => `<p>${p}</p>`).join('') +
-      '<blockquote><p>Demo content — all names and places are fictional.</p></blockquote>';
+    const html = b.paragraphs.map((p) => `<p>${p}</p>`).join('');
     const words = html
       .replace(/<[^>]+>/g, ' ')
       .split(/\s+/)
@@ -111,7 +125,12 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
         categoryId: categories.get(b.category),
         authorId: authors[b.author],
         status: b.status,
-        publishedAt: b.status === BlogStatus.DRAFT ? null : new Date(Date.now() - b.daysAgo * DAY),
+        publishedAt:
+          b.status === BlogStatus.DRAFT
+            ? null
+            : b.date
+              ? new Date(`${b.date}T09:00:00Z`)
+              : new Date(Date.now() - b.daysAgo * DAY),
         seo: {
           metaTitle: b.title.slice(0, 60),
           metaDescription: b.excerpt,
@@ -120,6 +139,30 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
     });
   }
 
+  await prisma.socialLink.createMany({
+    data: s.social.map((l, order) => ({ siteId, platform: l.platform, url: l.url, order })),
+  });
+  await prisma.mediaAsset.createMany({
+    data: s.media.map((m, i) => ({
+      siteId,
+      url: m.url,
+      storage: 'external',
+      filename: m.filename,
+      mimeType: m.filename.endsWith('.webp')
+        ? 'image/webp'
+        : m.filename.endsWith('.svg')
+          ? 'image/svg+xml'
+          : 'image/jpeg',
+      alt: m.alt,
+      uploadedById: authors.admin,
+      createdAt: new Date(Date.now() - (20 - i) * DAY),
+    })),
+  });
+}
+
+/** Forms and fictional leads. Only for sites that have no forms yet. */
+async function seedFormsAndLeads(siteId: string, s: SeedSite, authors: Record<string, string>) {
+  if ((await prisma.form.count({ where: { siteId } })) > 0) return;
   const forms = [];
   for (const f of FORMS) {
     forms.push(
@@ -178,8 +221,12 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
         status,
         sourcePage:
           form.key === 'contact'
-            ? '/contact'
-            : pickOne(['/eco-resorts', '/adventure-resorts', '/']),
+            ? '/contact-us'
+            : pickOne(
+                s === TUAJA
+                  ? ['/eco-resort', '/adventure-resort', '/premium-farm-resort']
+                  : ['/', '/our-brands'],
+              ),
         createdAt,
         updatedAt: createdAt,
         notes:
@@ -199,25 +246,6 @@ async function seedContent(siteId: string, s: SeedSite, authors: Record<string, 
       },
     });
   }
-
-  await prisma.socialLink.createMany({
-    data: s.social.map((l, order) => ({ siteId, platform: l.platform, url: l.url, order })),
-  });
-  await prisma.mediaAsset.createMany({
-    data: Object.entries(IMAGES)
-      .slice(0, s === TUAJA ? 9 : 6)
-      .map(([key, url], i) => ({
-        siteId,
-        url,
-        storage: 'external',
-        filename: `${key}.jpg`,
-        mimeType: 'image/jpeg',
-        alt: key.charAt(0).toUpperCase() + key.slice(1),
-        uploadedById: authors.admin,
-        createdAt: new Date(Date.now() - (20 - i) * DAY),
-      })),
-  });
-  return true;
 }
 
 async function seedLogs(
@@ -391,14 +419,24 @@ async function main() {
   });
 
   const authors = { superadmin: users[0].id, admin: users[1].id, editor: users[2].id };
-  const seededT = await seedContent(tuaja.id, TUAJA, authors);
-  const seededD = await seedContent(dan.id, DAN, authors);
+  const reset = process.env.SEED_RESET_WEBSITES === 'true';
+  const status: string[] = [];
+  for (const [site, data] of [
+    [tuaja, TUAJA],
+    [dan, DAN],
+  ] as const) {
+    const hasPages = (await prisma.page.count({ where: { siteId: site.id } })) > 0;
+    if (hasPages && reset) await resetWebsite(site.id, data);
+    if (!hasPages || reset) {
+      await seedWebsite(site.id, data, authors);
+      status.push(`${site.name} ${hasPages ? 'rebuilt' : 'created'}`);
+    } else status.push(`${site.name} already present`);
+    await seedFormsAndLeads(site.id, data, authors);
+  }
   await seedLogs(users, [tuaja, dan]);
 
   console.log('Seed complete.');
-  console.log(
-    `  Content: Tuaja Demo ${seededT ? 'created' : 'already present'}, Dan Demo ${seededD ? 'created' : 'already present'}`,
-  );
+  console.log(`  Website content: ${status.join(', ')}`);
   console.log(`  Demo logins (password ${DEMO_PASSWORD}): ${demo.map((d) => d.email).join(', ')}`);
   console.log(`  Public API keys: Tuaja Demo → ${TUAJA.apiKey} | Dan Demo → ${DAN.apiKey}`);
 }

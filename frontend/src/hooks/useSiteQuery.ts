@@ -2,23 +2,45 @@ import { useMutation, useQuery, useQueryClient, type UseQueryOptions } from '@ta
 import { toast } from 'sonner';
 import { errorMessage } from '@/lib/api';
 import { useSite } from '@/site/SiteProvider';
+import { announceContentChange } from '@/websites/live';
 
 /** Site-scoped query: key = ['site', siteId, ...key]. */
-export function useSiteQuery<T>(key: unknown[], fn: () => Promise<T>, opts?: Omit<UseQueryOptions<T>, 'queryKey' | 'queryFn'>) {
+export function useSiteQuery<T>(
+  key: unknown[],
+  fn: () => Promise<T>,
+  opts?: Omit<UseQueryOptions<T>, 'queryKey' | 'queryFn'>,
+) {
   const { siteId } = useSite();
-  return useQuery<T>({ queryKey: ['site', siteId, ...key], queryFn: fn, enabled: !!siteId && (opts?.enabled ?? true), ...opts });
+  return useQuery<T>({
+    queryKey: ['site', siteId, ...key],
+    queryFn: fn,
+    enabled: !!siteId && (opts?.enabled ?? true),
+    ...opts,
+  });
 }
 
 /** Mutation with toast feedback and invalidation of site-scoped keys. */
 export function useSiteMutation<TVars, TData = unknown>(
   fn: (v: TVars) => Promise<TData>,
-  { success, invalidate = [], onSuccess, onError }: { success?: string | ((d: TData, v: TVars) => string); invalidate?: unknown[][]; onSuccess?: (d: TData, v: TVars) => void; onError?: (e: unknown) => void } = {},
+  {
+    success,
+    invalidate = [],
+    onSuccess,
+    onError,
+  }: {
+    success?: string | ((d: TData, v: TVars) => string);
+    invalidate?: unknown[][];
+    onSuccess?: (d: TData, v: TVars) => void;
+    onError?: (e: unknown) => void;
+  } = {},
 ) {
   const qc = useQueryClient();
-  const { siteId } = useSite();
+  const { siteId, site } = useSite();
   return useMutation<TData, unknown, TVars>({
     mutationFn: fn,
     onSuccess: async (d, v) => {
+      // Open website tabs / previews of this tenant refetch immediately.
+      announceContentChange(site?.slug);
       if (success) toast.success(typeof success === 'function' ? success(d, v) : success);
       await Promise.all(invalidate.map((k) => qc.invalidateQueries({ queryKey: ['site', siteId, ...k] })));
       onSuccess?.(d, v);

@@ -6,7 +6,7 @@
     "start": "node dist/main",
     "start:dev": "nest start --watch",
     "start:prod": "npx prisma migrate deploy && node dist/main",
-    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\" --max-warnings 0",
+    "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\" \"scripts/**/*.ts\" --max-warnings 0",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\" \"prisma/**/*.ts\"",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "test": "jest --config jest.config.ts",
@@ -18,7 +18,9 @@
     "db:migrate:dev": "prisma migrate dev",
     "db:seed": "prisma db seed",
     "db:reset": "prisma migrate reset --force",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "mail:test": "ts-node --transpile-only scripts/mail-test.ts",
+    "db:seed:websites": "SEED_RESET_WEBSITES=true prisma db seed"
   },
   "license": "MIT",
   "description": "PIF Admin Panel API (NestJS + Prisma + PostgreSQL)",
@@ -81,7 +83,8 @@
     "typescript-eslint": "^8.73.0"
   },
   "overrides": {
-    "deepmerge-ts": "^8.0.0"
+    "deepmerge-ts": "^8.0.0",
+    "effect": "^3.22.5"
   },
   "private": true,
   "prisma": {

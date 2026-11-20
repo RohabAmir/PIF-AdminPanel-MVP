@@ -23,5 +23,5 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true
   },
-  "include": ["src/**/*", "test/**/*", "prisma/**/*.ts", "jest.config.ts"]
+  "include": ["src/**/*", "test/**/*", "prisma/**/*.ts", "scripts/**/*.ts", "jest.config.ts"]
 }
