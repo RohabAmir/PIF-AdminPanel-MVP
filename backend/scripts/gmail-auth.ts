@@ -29,7 +29,7 @@ async function main() {
       const got = url.searchParams.get('code');
       if (!got && !error) return void res.writeHead(404).end();
       const ok = !!got && url.searchParams.get('state') === state;
-      res.writeHead(ok ? 200 : 400, { 'Content-Type': 'text/html' });
+      res.writeHead(ok ? 200 : 400, { 'Content-Type': 'text/html; charset=utf-8' });
       res.end(
         ok
           ? '<h2>Done — you can close this tab and return to the terminal.</h2>'
